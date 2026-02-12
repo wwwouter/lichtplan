@@ -1,0 +1,46 @@
+appId: com.lichtplan.app
+productName: Lichtplan
+directories:
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!{vitest.config.ts,*.lichtplan}'
+asarUnpack:
+  - resources/**
+fileAssociations:
+  - ext: lichtplan
+    name: Lichtplan Project
+    role: Editor
+mac:
+  category: public.app-category.graphics-design
+  target:
+    - target: dmg
+      arch:
+        - universal
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    - NSDocumentsFolderUsageDescription: Lichtplan needs access to open and save project files.
+    - NSDownloadsFolderUsageDescription: Lichtplan needs access to export files.
+  notarize: false
+dmg:
+  artifactName: ${name}-${version}.${ext}
+win:
+  executableName: lichtplan
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Graphics
+appImage:
+  artifactName: ${name}-${version}.${ext}
+npmRebuild: false

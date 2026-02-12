@@ -1,0 +1,41 @@
+import { SymbolDefinition, SymbolCategory, CATEGORY_COLORS } from './types'
+
+const color = CATEGORY_COLORS[SymbolCategory.Overig]
+
+export const otherSymbols: SymbolDefinition[] = [
+  {
+    id: 'persoon',
+    name: 'Persoon',
+    category: SymbolCategory.Overig,
+    width: 20,
+    height: 30,
+    shapes: [
+      { type: 'circle', x: 10, y: 5, radius: 4, stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [10, 9, 10, 20], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [2, 14, 18, 14], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [10, 20, 3, 29], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [10, 20, 17, 29], stroke: color, strokeWidth: 2 }
+    ]
+  },
+  {
+    id: 'aansluitpunt',
+    name: 'Aansluitpunt',
+    category: SymbolCategory.Overig,
+    width: 16,
+    height: 16,
+    shapes: [
+      { type: 'circle', x: 8, y: 8, radius: 7, fill: color }
+    ]
+  },
+  {
+    id: 'centraaldoos',
+    name: 'Centraaldoos',
+    category: SymbolCategory.Overig,
+    width: 26,
+    height: 26,
+    shapes: [
+      { type: 'circle', x: 13, y: 13, radius: 12, stroke: color, strokeWidth: 2 },
+      { type: 'circle', x: 13, y: 13, radius: 3, fill: color }
+    ]
+  }
+]
