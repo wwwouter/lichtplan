@@ -39,5 +39,20 @@ export const electricalSymbols: SymbolDefinition[] = [
       { type: 'line', points: [13, 20, 13, 8], stroke: color, strokeWidth: 2 },
       { type: 'line', points: [7, 8, 19, 8], stroke: color, strokeWidth: 2 }
     ]
+  },
+  {
+    id: 'dubbel-geaard-stopcontact',
+    name: 'Dubbel geaard stopcontact',
+    category: SymbolCategory.Elektra,
+    width: 26,
+    height: 24,
+    shapes: [
+      { type: 'arc', x: 13, y: 20, innerRadius: 0, outerRadius: 12, angle: 180, rotation: -180, stroke: color, strokeWidth: 2, fill: 'transparent' },
+      { type: 'line', points: [1, 20, 25, 20], stroke: color, strokeWidth: 2 },
+      { type: 'arc', x: 13, y: 16, innerRadius: 0, outerRadius: 12, angle: 180, rotation: -180, stroke: color, strokeWidth: 2, fill: 'transparent' },
+      { type: 'line', points: [1, 16, 25, 16], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [13, 16, 13, 4], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [7, 4, 19, 4], stroke: color, strokeWidth: 2 }
+    ]
   }
 ]

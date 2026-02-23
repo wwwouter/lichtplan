@@ -18,7 +18,7 @@ function App(): JSX.Element {
   const isDirty = useProjectStore((s) => s.isDirty)
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
 
-  useKeyboardShortcuts()
+  useKeyboardShortcuts(handleSave)
 
   // Window title
   useEffect(() => {

@@ -10,13 +10,47 @@ interface Props {
 
 export function Toolbar({ stageRef }: Props) {
   const { handleNew, handleOpen, handleSave, handleSaveAs, handleLoadImage } = useFileOperations()
-  const { scale, zoomIn, zoomOut, resetZoom, activeTool, setActiveTool } = useCanvasStore()
+  const { scale, zoomIn, zoomOut, resetZoom, zoomToFit, activeTool, setActiveTool } = useCanvasStore()
   const project = useProjectStore((s) => s.project)
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const canUndo = useProjectStore((s) => s.canUndo)
   const canRedo = useProjectStore((s) => s.canRedo)
   const undo = useProjectStore((s) => s.undo)
   const redo = useProjectStore((s) => s.redo)
+
+  const activeFloor = project.floors.find((f) => f.id === activeFloorId)
+  const hasContent = !!(activeFloor?.floorPlanImage || (activeFloor?.symbols.length ?? 0) > 0)
+
+  const handleZoomToFit = () => {
+    if (!stageRef.current || !activeFloor) return
+    const image = activeFloor.floorPlanImage
+    const symbols = activeFloor.symbols
+    if (!image && symbols.length === 0) return
+
+    const SYMBOL_MARGIN = 30
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+
+    if (image) {
+      minX = Math.min(minX, 0)
+      minY = Math.min(minY, 0)
+      maxX = Math.max(maxX, image.width)
+      maxY = Math.max(maxY, image.height)
+    }
+
+    for (const s of symbols) {
+      minX = Math.min(minX, s.x - SYMBOL_MARGIN)
+      minY = Math.min(minY, s.y - SYMBOL_MARGIN)
+      maxX = Math.max(maxX, s.x + SYMBOL_MARGIN)
+      maxY = Math.max(maxY, s.y + SYMBOL_MARGIN)
+    }
+
+    const container = stageRef.current.container()
+    zoomToFit(
+      { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
+      container.clientWidth,
+      container.clientHeight
+    )
+  }
 
   const handleExportPNG = async () => {
     if (!stageRef.current) return
@@ -81,6 +115,7 @@ export function Toolbar({ stageRef }: Props) {
         <span className="zoom-label">{Math.round(scale * 100)}%</span>
         <button onClick={zoomIn} title="Inzoomen">+</button>
         <button onClick={resetZoom} title="Reset zoom">⟲</button>
+        <button onClick={handleZoomToFit} disabled={!hasContent} title="Best fit">⤢</button>
       </div>
 
       <div className="toolbar-separator" />

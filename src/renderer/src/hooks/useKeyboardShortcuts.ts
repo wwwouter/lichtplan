@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 
-export function useKeyboardShortcuts() {
+export function useKeyboardShortcuts(onSave?: () => void) {
   const removeSymbol = useProjectStore((s) => s.removeSymbol)
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
@@ -11,6 +11,13 @@ export function useKeyboardShortcuts() {
     const handleKeyDown = (e: KeyboardEvent): void => {
       const { selectedSymbolId, setSelectedSymbol } = useCanvasStore.getState()
       const floor = useProjectStore.getState().getActiveFloor()
+
+      // Save
+      if (e.key === 's' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
+        e.preventDefault()
+        onSave?.()
+        return
+      }
 
       // Delete selected symbol
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedSymbolId && !isInputFocused()) {
@@ -67,7 +74,7 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeFloorId, removeSymbol, updateSymbol])
+  }, [activeFloorId, removeSymbol, updateSymbol, onSave])
 }
 
 function isInputFocused(): boolean {

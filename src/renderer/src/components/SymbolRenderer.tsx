@@ -89,6 +89,8 @@ export function SymbolRenderer({ shapes, color, offsetX, offsetY }: Props) {
             return (
               <Path
                 key={key}
+                x={-offsetX}
+                y={-offsetY}
                 data={shape.data}
                 fill={shape.fill}
                 stroke={shape.stroke ?? color}
