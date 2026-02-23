@@ -54,5 +54,18 @@ export const electricalSymbols: SymbolDefinition[] = [
       { type: 'line', points: [13, 16, 13, 4], stroke: color, strokeWidth: 2 },
       { type: 'line', points: [7, 4, 19, 4], stroke: color, strokeWidth: 2 }
     ]
+  },
+  {
+    id: 'cat6a-contactdoos',
+    name: 'Cat6a contactdoos',
+    category: SymbolCategory.Elektra,
+    width: 26,
+    height: 24,
+    shapes: [
+      { type: 'line', points: [1, 24, 25, 24], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [1, 24, 13, 2], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [25, 24, 13, 2], stroke: color, strokeWidth: 2 },
+      { type: 'text', x: 6, y: 13, text: '6a', fontSize: 9, fill: color, fontStyle: 'bold' }
+    ]
   }
 ]
