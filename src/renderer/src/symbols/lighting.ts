@@ -48,6 +48,25 @@ export const lightingSymbols: SymbolDefinition[] = [
     ]
   },
   {
+    id: 'opbouwspot',
+    name: 'Opbouwspot',
+    category: SymbolCategory.Verlichting,
+    width: 26,
+    height: 26,
+    shapes: [
+      { type: 'rect', x: 1, y: 1, width: 24, height: 24, stroke: color, strokeWidth: 2 },
+      { type: 'circle', x: 13, y: 13, radius: 5, fill: color },
+      { type: 'line', points: [13, 0, 13, 4], stroke: color, strokeWidth: 1.5 },
+      { type: 'line', points: [13, 22, 13, 26], stroke: color, strokeWidth: 1.5 },
+      { type: 'line', points: [0, 13, 4, 13], stroke: color, strokeWidth: 1.5 },
+      { type: 'line', points: [22, 13, 26, 13], stroke: color, strokeWidth: 1.5 },
+      { type: 'line', points: [4, 4, 7, 7], stroke: color, strokeWidth: 1.5 },
+      { type: 'line', points: [19, 4, 22, 7], stroke: color, strokeWidth: 1.5 },
+      { type: 'line', points: [4, 19, 7, 22], stroke: color, strokeWidth: 1.5 },
+      { type: 'line', points: [19, 19, 22, 22], stroke: color, strokeWidth: 1.5 }
+    ]
+  },
+  {
     id: 'led-strip',
     name: 'LED strip',
     category: SymbolCategory.Verlichting,
