@@ -36,7 +36,6 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
       ref={groupRef}
       x={symbol.x}
       y={symbol.y}
-      rotation={symbol.rotation}
       draggable
       onClick={(e) => {
         e.cancelBubble = true
@@ -65,30 +64,38 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
         }
       }}
     >
-      {/* Transparent hit area so the Group receives pointer events */}
-      <Rect
-        x={-offsetX}
-        y={-offsetY}
-        width={definition.width}
-        height={definition.height}
-        fill="transparent"
-      />
-      <SymbolRenderer shapes={definition.shapes} color={color} offsetX={offsetX} offsetY={offsetY} />
-      {isSelected && (
-        <SelectionOutline width={definition.width} height={definition.height} offsetX={offsetX} offsetY={offsetY} />
-      )}
-      {symbol.label && (
-        <Text
+      <Group rotation={symbol.rotation}>
+        {/* Transparent hit area so the Group receives pointer events */}
+        <Rect
           x={-offsetX}
-          y={offsetY + 4}
-          text={symbol.label}
-          fontSize={11}
-          fill="#374151"
+          y={-offsetY}
           width={definition.width}
-          align="center"
-          listening={false}
+          height={definition.height}
+          fill="transparent"
         />
-      )}
+        <SymbolRenderer shapes={definition.shapes} color={color} offsetX={offsetX} offsetY={offsetY} />
+        {isSelected && (
+          <SelectionOutline width={definition.width} height={definition.height} offsetX={offsetX} offsetY={offsetY} />
+        )}
+      </Group>
+      {symbol.label && (() => {
+        const fontSize = 11
+        const longestWord = symbol.label.split(/\s+/).reduce((m, w) => (w.length > m ? w.length : m), 0)
+        const labelWidth = Math.max(definition.width, Math.ceil(longestWord * fontSize * 0.62))
+        return (
+          <Text
+            x={-labelWidth / 2}
+            y={offsetY + 4}
+            text={symbol.label}
+            fontSize={fontSize}
+            fill="#374151"
+            width={labelWidth}
+            align="center"
+            wrap="word"
+            listening={false}
+          />
+        )
+      })()}
     </Group>
   )
 }

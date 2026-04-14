@@ -57,8 +57,8 @@ export function ContextMenu() {
       <button className="context-menu-item" onClick={() => handleRotate(90)}>
         Roteer 90°
       </button>
-      <button className="context-menu-item" onClick={() => handleRotate(45)}>
-        Roteer 45°
+      <button className="context-menu-item" onClick={() => handleRotate(180)}>
+        Roteer 180°
       </button>
       <button className="context-menu-item" onClick={handleAddLabel}>
         Label toevoegen

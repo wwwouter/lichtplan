@@ -132,6 +132,7 @@ export function FloorCanvas({ stageRef }: Props) {
       className="floor-canvas-container"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
+      onContextMenu={(e) => e.preventDefault()}
     >
       <Stage
         ref={stageRef}
