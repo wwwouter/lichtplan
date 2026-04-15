@@ -6,42 +6,76 @@ export function LabelDialog() {
   const { labelDialog, setLabelDialog } = useUIStore()
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
+  const getActiveFloor = useProjectStore((s) => s.getActiveFloor)
   const [value, setValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const floor = getActiveFloor()
+  const symbol = labelDialog
+    ? floor?.symbols.find((s) => s.id === labelDialog.symbolId)
+    : undefined
+  const isTextSymbol = symbol?.symbolId === 'tekst'
 
   useEffect(() => {
     if (labelDialog) {
       setValue(labelDialog.currentLabel)
-      setTimeout(() => inputRef.current?.focus(), 0)
+      setTimeout(() => {
+        if (isTextSymbol) textareaRef.current?.focus()
+        else inputRef.current?.focus()
+      }, 0)
     }
-  }, [labelDialog])
+  }, [labelDialog, isTextSymbol])
 
   if (!labelDialog) return null
 
   const handleSubmit = () => {
+    const cleaned = isTextSymbol ? value : value.trim()
     updateSymbol(activeFloorId, labelDialog.symbolId, {
-      label: value.trim() || undefined
+      label: cleaned.length > 0 ? cleaned : undefined
     })
     setLabelDialog(null)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSubmit()
+    if (e.key === 'Escape') setLabelDialog(null)
+  }
+
+  const handleTextareaKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      handleSubmit()
+    }
     if (e.key === 'Escape') setLabelDialog(null)
   }
 
   return (
     <div className="dialog-overlay" onClick={() => setLabelDialog(null)}>
       <div className="dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="dialog-title">Label bewerken</div>
-        <input
-          ref={inputRef}
-          className="dialog-input"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Voer een label in..."
-        />
+        <div className="dialog-title">
+          {isTextSymbol ? 'Tekst bewerken' : 'Label bewerken'}
+        </div>
+        {isTextSymbol ? (
+          <textarea
+            ref={textareaRef}
+            className="dialog-input"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleTextareaKeyDown}
+            placeholder="Voer tekst in..."
+            rows={5}
+          />
+        ) : (
+          <input
+            ref={inputRef}
+            className="dialog-input"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleInputKeyDown}
+            placeholder="Voer een label in..."
+          />
+        )}
         <div className="dialog-actions">
           <button className="dialog-btn" onClick={() => setLabelDialog(null)}>
             Annuleren

@@ -64,25 +64,100 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
         }
       }}
     >
-      <Group rotation={symbol.rotation}>
-        {/* Transparent hit area so the Group receives pointer events */}
-        <Rect
-          x={-offsetX}
-          y={-offsetY}
-          width={definition.width}
-          height={definition.height}
-          fill="transparent"
-        />
-        <SymbolRenderer shapes={definition.shapes} color={color} offsetX={offsetX} offsetY={offsetY} />
-        {isSelected && (
-          <SelectionOutline width={definition.width} height={definition.height} offsetX={offsetX} offsetY={offsetY} />
-        )}
-      </Group>
-      {symbol.label && (
-        <SymbolLabel
+      {definition.id === 'tekst' ? (
+        <TextSymbol
+          rotation={symbol.rotation}
           text={symbol.label}
-          y={offsetY + 4}
-          minWidth={definition.width}
+          isSelected={isSelected}
+        />
+      ) : (
+        <>
+          <Group rotation={symbol.rotation}>
+            {/* Transparent hit area so the Group receives pointer events */}
+            <Rect
+              x={-offsetX}
+              y={-offsetY}
+              width={definition.width}
+              height={definition.height}
+              fill="transparent"
+            />
+            <SymbolRenderer shapes={definition.shapes} color={color} offsetX={offsetX} offsetY={offsetY} />
+            {isSelected && (
+              <SelectionOutline width={definition.width} height={definition.height} offsetX={offsetX} offsetY={offsetY} />
+            )}
+          </Group>
+          {symbol.label && (
+            <SymbolLabel
+              text={symbol.label}
+              y={offsetY + 4}
+              minWidth={definition.width}
+            />
+          )}
+        </>
+      )}
+    </Group>
+  )
+}
+
+function TextSymbol({
+  rotation,
+  text,
+  isSelected
+}: {
+  rotation: number
+  text: string | undefined
+  isSelected: boolean
+}) {
+  const fontSize = 14
+  const lineHeight = 1.15
+  const padX = 2
+  const padY = 1
+  const placeholder = 'Tekst'
+  const display = text && text.length > 0 ? text : placeholder
+  const isPlaceholder = !text
+
+  const textRef = useRef<Konva.Text>(null)
+  const [size, setSize] = useState({ width: 40, height: fontSize })
+
+  useLayoutEffect(() => {
+    const node = textRef.current
+    if (!node) return
+    setSize({ width: node.width(), height: node.height() })
+  }, [display])
+
+  return (
+    <Group rotation={rotation}>
+      <Rect
+        x={-padX}
+        y={-padY}
+        width={size.width + padX * 2}
+        height={size.height + padY * 2}
+        fill="#ffffff"
+        stroke="#000000"
+        strokeWidth={1}
+        listening={true}
+      />
+      <Text
+        ref={textRef}
+        x={0}
+        y={0}
+        text={display}
+        fontSize={fontSize}
+        lineHeight={lineHeight}
+        fill={isPlaceholder ? '#9ca3af' : '#111827'}
+        wrap="none"
+        listening={false}
+      />
+      {isSelected && (
+        <Rect
+          x={-padX - 4}
+          y={-padY - 4}
+          width={size.width + padX * 2 + 8}
+          height={size.height + padY * 2 + 8}
+          stroke="#3B82F6"
+          strokeWidth={1.5}
+          dash={[4, 3]}
+          listening={false}
         />
       )}
     </Group>

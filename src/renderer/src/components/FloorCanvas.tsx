@@ -26,6 +26,7 @@ export function FloorCanvas({ stageRef }: Props) {
   const { stageX, stageY, scale, selectedSymbolId, activeTool, setStagePosition, setScale, setSelectedSymbol } =
     useCanvasStore()
   const setContextMenu = useUIStore((s) => s.setContextMenu)
+  const setLabelDialog = useUIStore((s) => s.setLabelDialog)
 
   // Resize observer
   useEffect(() => {
@@ -89,15 +90,20 @@ export function FloorCanvas({ stageRef }: Props) {
       const x = (e.clientX - rect.left - stageX) / scale
       const y = (e.clientY - rect.top - stageY) / scale
 
+      const newId = uuidv4()
       addSymbol(activeFloorId, {
-        id: uuidv4(),
+        id: newId,
         symbolId,
         x,
         y,
         rotation: 0
       })
+
+      if (symbolId === 'tekst') {
+        setLabelDialog({ symbolId: newId, currentLabel: '' })
+      }
     },
-    [activeFloorId, addSymbol, stageX, stageY, scale, stageRef]
+    [activeFloorId, addSymbol, stageX, stageY, scale, stageRef, setLabelDialog]
   )
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {

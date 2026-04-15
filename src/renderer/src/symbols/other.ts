@@ -50,5 +50,16 @@ export const otherSymbols: SymbolDefinition[] = [
       { type: 'path', data: 'M 5 14.6 A 13 13 0 0 1 25 14.6', stroke: color, strokeWidth: 2 },
       { type: 'path', data: 'M 1.2 11.4 A 18 18 0 0 1 28.8 11.4', stroke: color, strokeWidth: 2 }
     ]
+  },
+  {
+    id: 'tekst',
+    name: 'Tekst',
+    category: SymbolCategory.Overig,
+    width: 24,
+    height: 24,
+    shapes: [
+      { type: 'line', points: [4, 5, 20, 5], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [12, 5, 12, 21], stroke: color, strokeWidth: 2 }
+    ]
   }
 ]
