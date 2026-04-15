@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useLayoutEffect, useState } from 'react'
 import { Group, Text, Rect } from 'react-konva'
 import Konva from 'konva'
 import { PlacedSymbol } from '../types/project'
@@ -78,25 +78,72 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
           <SelectionOutline width={definition.width} height={definition.height} offsetX={offsetX} offsetY={offsetY} />
         )}
       </Group>
-      {symbol.label && (() => {
-        const fontSize = 11
-        const longestWord = symbol.label.split(/\s+/).reduce((m, w) => (w.length > m ? w.length : m), 0)
-        const labelWidth = Math.max(definition.width, Math.ceil(longestWord * fontSize * 0.62))
-        return (
-          <Text
-            x={-labelWidth / 2}
-            y={offsetY + 4}
-            text={symbol.label}
-            fontSize={fontSize}
-            fill="#374151"
-            width={labelWidth}
-            align="center"
-            wrap="word"
-            listening={false}
-          />
-        )
-      })()}
+      {symbol.label && (
+        <SymbolLabel
+          text={symbol.label}
+          y={offsetY + 4}
+          minWidth={definition.width}
+        />
+      )}
     </Group>
+  )
+}
+
+function SymbolLabel({
+  text,
+  y,
+  minWidth
+}: {
+  text: string
+  y: number
+  minWidth: number
+}) {
+  const fontSize = 11
+  const lineHeight = 1
+  const padX = 2
+  const padY = 1
+  const longestWord = text.split(/\s+/).reduce((m, w) => (w.length > m ? w.length : m), 0)
+  const labelWidth = Math.max(minWidth, Math.ceil(longestWord * fontSize * 0.62))
+
+  const textRef = useRef<Konva.Text>(null)
+  const [lines, setLines] = useState<Array<{ text: string; width: number }>>([])
+
+  useLayoutEffect(() => {
+    const node = textRef.current
+    if (!node) return
+    const arr = (node as unknown as { textArr?: Array<{ text: string; width: number }> }).textArr
+    if (arr) {
+      setLines(arr.map((l) => ({ text: l.text, width: l.width })))
+    }
+  }, [text, labelWidth])
+
+  return (
+    <>
+      {lines.map((line, i) => (
+        <Rect
+          key={i}
+          x={-line.width / 2 - padX}
+          y={y + i * fontSize * lineHeight - padY}
+          width={line.width + padX * 2}
+          height={fontSize + padY * 2}
+          fill="#ffffff"
+          listening={false}
+        />
+      ))}
+      <Text
+        ref={textRef}
+        x={-labelWidth / 2}
+        y={y}
+        text={text}
+        fontSize={fontSize}
+        lineHeight={lineHeight}
+        fill="#374151"
+        width={labelWidth}
+        align="center"
+        wrap="word"
+        listening={false}
+      />
+    </>
   )
 }
 

@@ -67,5 +67,18 @@ export const electricalSymbols: SymbolDefinition[] = [
       { type: 'line', points: [25, 24, 13, 2], stroke: color, strokeWidth: 2 },
       { type: 'text', x: 6, y: 13, text: '6a', fontSize: 9, fill: color, fontStyle: 'bold' }
     ]
+  },
+  {
+    id: 'cat5e-uutp-contactdoos',
+    name: 'Cat5e U/UTP contactdoos',
+    category: SymbolCategory.Elektra,
+    width: 26,
+    height: 24,
+    shapes: [
+      { type: 'line', points: [1, 24, 25, 24], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [1, 24, 13, 2], stroke: color, strokeWidth: 2 },
+      { type: 'line', points: [25, 24, 13, 2], stroke: color, strokeWidth: 2 },
+      { type: 'text', x: 6, y: 13, text: '5e', fontSize: 9, fill: color, fontStyle: 'bold' }
+    ]
   }
 ]
