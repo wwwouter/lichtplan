@@ -25,6 +25,7 @@ export function ContextMenu() {
   const floor = getActiveFloor()
   const symbol = floor?.symbols.find((s) => s.id === contextMenu.symbolId)
   const isTextSymbol = symbol?.symbolId === 'tekst'
+  const hasLabel = Boolean(symbol?.label && symbol.label.length > 0)
 
   const handleRotate = (degrees: number) => {
     if (!symbol) return
@@ -66,7 +67,7 @@ export function ContextMenu() {
         </>
       )}
       <button className="context-menu-item" onClick={handleAddLabel}>
-        {isTextSymbol ? 'Bewerken' : 'Label toevoegen'}
+        {isTextSymbol ? 'Bewerken' : hasLabel ? 'Label bewerken' : 'Label toevoegen'}
       </button>
       <button className="context-menu-item" onClick={() => {
         const newId = duplicateSymbol(activeFloorId, contextMenu.symbolId)

@@ -192,19 +192,24 @@ function SymbolLabel({
     }
   }, [text, labelWidth])
 
+  const maxLineWidth = lines.reduce((m, l) => (l.width > m ? l.width : m), 0)
+  const boxWidth = Math.max(maxLineWidth, 1) + padX * 2
+  const boxHeight = Math.max(lines.length, 1) * fontSize * lineHeight + padY * 2
+
   return (
     <>
-      {lines.map((line, i) => (
+      {lines.length > 0 && (
         <Rect
-          key={i}
-          x={-line.width / 2 - padX}
-          y={y + i * fontSize * lineHeight - padY}
-          width={line.width + padX * 2}
-          height={fontSize + padY * 2}
+          x={-boxWidth / 2}
+          y={y - padY}
+          width={boxWidth}
+          height={boxHeight}
           fill="#ffffff"
+          stroke="#000000"
+          strokeWidth={1}
           listening={false}
         />
-      ))}
+      )}
       <Text
         ref={textRef}
         x={-labelWidth / 2}
