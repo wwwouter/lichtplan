@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react'
 import Konva from 'konva'
 import { SymbolDefinition, CATEGORY_COLORS } from '../symbols'
+import { useUIStore } from '../stores/useUIStore'
 
 interface Props {
   symbol: SymbolDefinition
@@ -10,6 +11,8 @@ interface Props {
 export function SymbolPaletteItem({ symbol, color }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<Konva.Stage | null>(null)
+  const hidden = useUIStore((s) => s.hiddenSymbolIds.has(symbol.id))
+  const toggleVisibility = useUIStore((s) => s.toggleSymbolVisibility)
 
   useEffect(() => {
     if (!canvasRef.current || stageRef.current) return
@@ -122,13 +125,35 @@ export function SymbolPaletteItem({ symbol, color }: Props) {
 
   return (
     <div
-      className="symbol-palette-item"
+      className={`symbol-palette-item${hidden ? ' symbol-hidden' : ''}`}
       draggable
       onDragStart={handleDragStart}
       title={symbol.name}
     >
       <div ref={canvasRef} className="symbol-preview" />
       <span className="symbol-name">{symbol.name}</span>
+      <button
+        className="symbol-visibility-toggle"
+        onClick={(e) => {
+          e.stopPropagation()
+          toggleVisibility(symbol.id)
+        }}
+        title={hidden ? 'Tonen' : 'Verbergen'}
+      >
+        {hidden ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+            <line x1="1" y1="1" x2="23" y2="23" />
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        )}
+      </button>
     </div>
   )
 }

@@ -10,7 +10,7 @@ export const lightingSymbols: SymbolDefinition[] = [
     width: 30,
     height: 30,
     shapes: [
-      { type: 'circle', x: 15, y: 15, radius: 14, stroke: color, strokeWidth: 2 },
+      { type: 'circle', x: 15, y: 15, radius: 14, stroke: color, strokeWidth: 2, fill: '#ffffff' },
       { type: 'line', points: [3, 3, 27, 27], stroke: color, strokeWidth: 2 },
       { type: 'line', points: [27, 3, 3, 27], stroke: color, strokeWidth: 2 }
     ]
@@ -54,7 +54,7 @@ export const lightingSymbols: SymbolDefinition[] = [
     width: 26,
     height: 26,
     shapes: [
-      { type: 'rect', x: 1, y: 1, width: 24, height: 24, stroke: color, strokeWidth: 2 },
+      { type: 'rect', x: 1, y: 1, width: 24, height: 24, stroke: color, strokeWidth: 2, fill: '#ffffff' },
       { type: 'circle', x: 13, y: 13, radius: 5, fill: color },
       { type: 'line', points: [13, 0, 13, 4], stroke: color, strokeWidth: 1.5 },
       { type: 'line', points: [13, 22, 13, 26], stroke: color, strokeWidth: 1.5 },
@@ -85,7 +85,7 @@ export const lightingSymbols: SymbolDefinition[] = [
     width: 30,
     height: 30,
     shapes: [
-      { type: 'line', points: [15, 2, 28, 26, 2, 26], stroke: color, strokeWidth: 2, closed: true },
+      { type: 'line', points: [15, 2, 28, 26, 2, 26], stroke: color, strokeWidth: 2, closed: true, fill: '#ffffff' },
       { type: 'circle', x: 15, y: 16, radius: 4, fill: color },
       { type: 'line', points: [15, 8, 15, 10], stroke: color, strokeWidth: 2 }
     ]

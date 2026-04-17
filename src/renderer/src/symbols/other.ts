@@ -10,7 +10,7 @@ export const otherSymbols: SymbolDefinition[] = [
     width: 20,
     height: 30,
     shapes: [
-      { type: 'circle', x: 10, y: 5, radius: 4, stroke: color, strokeWidth: 2 },
+      { type: 'circle', x: 10, y: 5, radius: 4, stroke: color, strokeWidth: 2, fill: '#ffffff' },
       { type: 'line', points: [10, 9, 10, 20], stroke: color, strokeWidth: 2 },
       { type: 'line', points: [2, 14, 18, 14], stroke: color, strokeWidth: 2 },
       { type: 'line', points: [10, 20, 3, 29], stroke: color, strokeWidth: 2 },
@@ -34,7 +34,7 @@ export const otherSymbols: SymbolDefinition[] = [
     width: 26,
     height: 26,
     shapes: [
-      { type: 'circle', x: 13, y: 13, radius: 12, stroke: color, strokeWidth: 2 },
+      { type: 'circle', x: 13, y: 13, radius: 12, stroke: color, strokeWidth: 2, fill: '#ffffff' },
       { type: 'circle', x: 13, y: 13, radius: 3, fill: color }
     ]
   },

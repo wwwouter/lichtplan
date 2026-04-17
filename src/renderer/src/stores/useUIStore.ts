@@ -10,11 +10,13 @@ interface UIState {
   contextMenu: { x: number; y: number; symbolId: string } | null
   labelDialog: LabelDialogState | null
   expandedCategories: Record<string, boolean>
+  hiddenSymbolIds: Set<string>
 
   toggleSidebar: () => void
   setContextMenu: (menu: { x: number; y: number; symbolId: string } | null) => void
   setLabelDialog: (dialog: LabelDialogState | null) => void
   toggleCategory: (category: string) => void
+  toggleSymbolVisibility: (symbolId: string) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -27,6 +29,7 @@ export const useUIStore = create<UIState>((set) => ({
     Schakelaars: true,
     Overig: true
   },
+  hiddenSymbolIds: new Set(),
 
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
@@ -40,5 +43,13 @@ export const useUIStore = create<UIState>((set) => ({
         ...state.expandedCategories,
         [category]: !state.expandedCategories[category]
       }
-    }))
+    })),
+
+  toggleSymbolVisibility: (symbolId) =>
+    set((state) => {
+      const next = new Set(state.hiddenSymbolIds)
+      if (next.has(symbolId)) next.delete(symbolId)
+      else next.add(symbolId)
+      return { hiddenSymbolIds: next }
+    })
 }))

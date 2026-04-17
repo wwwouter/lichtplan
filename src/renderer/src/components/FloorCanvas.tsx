@@ -27,6 +27,7 @@ export function FloorCanvas({ stageRef }: Props) {
     useCanvasStore()
   const setContextMenu = useUIStore((s) => s.setContextMenu)
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
+  const hiddenSymbolIds = useUIStore((s) => s.hiddenSymbolIds)
 
   // Resize observer
   useEffect(() => {
@@ -157,6 +158,7 @@ export function FloorCanvas({ stageRef }: Props) {
         <Layer>
           {floor.floorPlanImage && <FloorPlanImageLayer image={floor.floorPlanImage} />}
           {floor.symbols.map((sym) => {
+            if (hiddenSymbolIds.has(sym.symbolId)) return null
             const def = getSymbolById(sym.symbolId)
             if (!def) return null
             return (
