@@ -221,13 +221,13 @@ export function FloorCanvas({ stageRef }: Props) {
         y={stageY}
         scaleX={scale}
         scaleY={scale}
-        draggable={false}
+        draggable={interactionMode === 'default'}
         onWheel={handleWheel}
         onClick={handleStageClick}
         onTap={handleStageClick}
         onDragEnd={handleStageDragEnd}
       >
-        <Layer>
+        <Layer listening={interactionMode === 'default'}>
           {floor.floorPlanImage && <FloorPlanImageLayer image={floor.floorPlanImage} />}
           {floor.symbols.map((sym) => {
             if (hiddenSymbolIds.has(sym.symbolId)) return null
