@@ -9,8 +9,8 @@ interface Props {
 }
 
 export function Toolbar({ stageRef }: Props) {
-  const { handleNew, handleOpen, handleSave, handleSaveAs, handleLoadImage } = useFileOperations()
-  const { scale, zoomIn, zoomOut, resetZoom, zoomToFit, activeTool, setActiveTool } = useCanvasStore()
+  const { handleNew, handleOpen, handleSave, handleLoadImage } = useFileOperations()
+  const { scale, zoomIn, zoomOut, resetZoom, zoomToFit } = useCanvasStore()
   const project = useProjectStore((s) => s.project)
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const canUndo = useProjectStore((s) => s.canUndo)
@@ -83,9 +83,6 @@ export function Toolbar({ stageRef }: Props) {
           <span className="toolbar-icon">💾</span>
           <span>Opslaan</span>
         </button>
-        <button onClick={handleSaveAs} title="Opslaan als (Ctrl+Shift+S)">
-          <span>Opslaan als</span>
-        </button>
       </div>
 
       <div className="toolbar-separator" />
@@ -116,25 +113,6 @@ export function Toolbar({ stageRef }: Props) {
         <button onClick={zoomIn} title="Inzoomen">+</button>
         <button onClick={resetZoom} title="Reset zoom">⟲</button>
         <button onClick={handleZoomToFit} disabled={!hasContent} title="Best fit">⤢</button>
-      </div>
-
-      <div className="toolbar-separator" />
-
-      <div className="toolbar-group">
-        <button
-          className={activeTool === 'select' ? 'active' : ''}
-          onClick={() => setActiveTool('select')}
-          title="Selecteren"
-        >
-          ↖
-        </button>
-        <button
-          className={activeTool === 'pan' ? 'active' : ''}
-          onClick={() => setActiveTool('pan')}
-          title="Verplaatsen"
-        >
-          ✋
-        </button>
       </div>
 
       <div className="toolbar-separator" />

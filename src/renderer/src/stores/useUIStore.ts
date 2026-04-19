@@ -11,12 +11,14 @@ interface UIState {
   labelDialog: LabelDialogState | null
   expandedCategories: Record<string, boolean>
   hiddenSymbolIds: Set<string>
+  loading: string | null
 
   toggleSidebar: () => void
   setContextMenu: (menu: { x: number; y: number; symbolId: string } | null) => void
   setLabelDialog: (dialog: LabelDialogState | null) => void
   toggleCategory: (category: string) => void
   toggleSymbolVisibility: (symbolId: string) => void
+  setLoading: (message: string | null) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -30,6 +32,7 @@ export const useUIStore = create<UIState>((set) => ({
     Overig: true
   },
   hiddenSymbolIds: new Set(),
+  loading: null,
 
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
@@ -51,5 +54,7 @@ export const useUIStore = create<UIState>((set) => ({
       if (next.has(symbolId)) next.delete(symbolId)
       else next.add(symbolId)
       return { hiddenSymbolIds: next }
-    })
+    }),
+
+  setLoading: (message) => set({ loading: message })
 }))

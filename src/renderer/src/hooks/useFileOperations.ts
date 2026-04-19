@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
+import { useUIStore } from '../stores/useUIStore'
 import { serializeProject, deserializeProject } from '../services/fileService'
 import { loadFloorPlanImage } from '../services/imageService'
 
@@ -16,9 +17,14 @@ export function useFileOperations() {
   const handleOpen = useCallback(async () => {
     const result = await window.api.openProject()
     if (!result) return
-    const proj = deserializeProject(result.data)
-    setProject(proj, result.filePath)
-    useCanvasStore.getState().resetZoom()
+    useUIStore.getState().setLoading('Project openen...')
+    try {
+      const proj = deserializeProject(result.data)
+      setProject(proj, result.filePath)
+      useCanvasStore.getState().resetZoom()
+    } finally {
+      useUIStore.getState().setLoading(null)
+    }
   }, [setProject])
 
   const handleSave = useCallback(async () => {
@@ -42,8 +48,13 @@ export function useFileOperations() {
   const handleLoadImage = useCallback(async () => {
     const result = await window.api.openImage()
     if (!result) return
-    const image = await loadFloorPlanImage(result.data, result.fileName)
-    setFloorImage(activeFloorId, image)
+    useUIStore.getState().setLoading('Afbeelding laden...')
+    try {
+      const image = await loadFloorPlanImage(result.data, result.fileName)
+      setFloorImage(activeFloorId, image)
+    } finally {
+      useUIStore.getState().setLoading(null)
+    }
   }, [activeFloorId, setFloorImage])
 
   return {

@@ -1,13 +1,10 @@
 import { create } from 'zustand'
 
-export type ActiveTool = 'select' | 'pan'
-
 interface CanvasState {
   stageX: number
   stageY: number
   scale: number
   selectedSymbolId: string | null
-  activeTool: ActiveTool
   dragSymbolId: string | null
 
   setStagePosition: (x: number, y: number) => void
@@ -17,7 +14,6 @@ interface CanvasState {
   resetZoom: () => void
   setSelectedSymbol: (id: string | null) => void
   zoomToFit: (bounds: { x: number; y: number; width: number; height: number }, viewportWidth: number, viewportHeight: number) => void
-  setActiveTool: (tool: ActiveTool) => void
   setDragSymbolId: (id: string | null) => void
 }
 
@@ -30,7 +26,6 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   stageY: 0,
   scale: 1,
   selectedSymbolId: null,
-  activeTool: 'select',
   dragSymbolId: null,
 
   setStagePosition: (x, y) => set({ stageX: x, stageY: y }),
@@ -65,8 +60,6 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   },
 
   setSelectedSymbol: (id) => set({ selectedSymbolId: id }),
-
-  setActiveTool: (tool) => set({ activeTool: tool, selectedSymbolId: null }),
 
   setDragSymbolId: (id) => set({ dragSymbolId: id })
 }))
