@@ -7,6 +7,7 @@ import { FloorTabs } from './components/FloorTabs'
 import { ContextMenu } from './components/ContextMenu'
 import { LabelDialog } from './components/LabelDialog'
 import { LoadingOverlay } from './components/LoadingOverlay'
+import { CalibrationDialog } from './components/CalibrationDialog'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useFileOperations } from './hooks/useFileOperations'
 import { useProjectStore } from './stores/useProjectStore'
@@ -72,6 +73,7 @@ function App(): JSX.Element {
       <FloorTabs />
       <ContextMenu />
       <LabelDialog />
+      <CalibrationDialog />
       <LoadingOverlay />
     </div>
   )

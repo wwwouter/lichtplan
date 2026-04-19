@@ -12,6 +12,7 @@ export interface Floor {
   floorPlanImage: FloorPlanImage | null
   symbols: PlacedSymbol[]
   order: number
+  pixelsPerMm?: number
 }
 
 export interface FloorPlanImage {

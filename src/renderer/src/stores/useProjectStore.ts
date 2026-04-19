@@ -29,6 +29,7 @@ interface ProjectState {
   renameFloor: (floorId: string, name: string) => void
   setActiveFloor: (floorId: string) => void
   setFloorImage: (floorId: string, image: FloorPlanImage) => void
+  setFloorScale: (floorId: string, pixelsPerMm: number) => void
   getActiveFloor: () => Floor | undefined
 
   // Symbol actions
@@ -219,6 +220,18 @@ export const useProjectStore = create<ProjectState>((set, get) => {
           ...state.project,
           floors: state.project.floors.map((f) =>
             f.id === floorId ? { ...f, floorPlanImage: image } : f
+          ),
+          updatedAt: new Date().toISOString()
+        },
+        isDirty: true
+      })),
+
+    setFloorScale: (floorId, pixelsPerMm) =>
+      setWithHistory((state) => ({
+        project: {
+          ...state.project,
+          floors: state.project.floors.map((f) =>
+            f.id === floorId ? { ...f, pixelsPerMm } : f
           ),
           updatedAt: new Date().toISOString()
         },

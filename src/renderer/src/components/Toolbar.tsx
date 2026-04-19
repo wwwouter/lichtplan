@@ -3,6 +3,7 @@ import { useFileOperations } from '../hooks/useFileOperations'
 import type Konva from 'konva'
 import { exportStageToPNG, exportFloorToPDF } from '../services/exportService'
 import { useProjectStore } from '../stores/useProjectStore'
+import { useUIStore } from '../stores/useUIStore'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -18,8 +19,12 @@ export function Toolbar({ stageRef }: Props) {
   const undo = useProjectStore((s) => s.undo)
   const redo = useProjectStore((s) => s.redo)
 
+  const interactionMode = useUIStore((s) => s.interactionMode)
+  const setInteractionMode = useUIStore((s) => s.setInteractionMode)
+
   const activeFloor = project.floors.find((f) => f.id === activeFloorId)
   const hasContent = !!(activeFloor?.floorPlanImage || (activeFloor?.symbols.length ?? 0) > 0)
+  const hasScale = !!(activeFloor?.pixelsPerMm)
 
   const handleZoomToFit = () => {
     if (!stageRef.current || !activeFloor) return
@@ -113,6 +118,28 @@ export function Toolbar({ stageRef }: Props) {
         <button onClick={zoomIn} title="Inzoomen">+</button>
         <button onClick={resetZoom} title="Reset zoom">⟲</button>
         <button onClick={handleZoomToFit} disabled={!hasContent} title="Best fit">⤢</button>
+      </div>
+
+      <div className="toolbar-separator" />
+
+      <div className="toolbar-group">
+        <button
+          className={interactionMode === 'calibrate' ? 'active' : ''}
+          onClick={() => setInteractionMode(interactionMode === 'calibrate' ? 'default' : 'calibrate')}
+          title="Schaal instellen"
+        >
+          <span className="toolbar-icon">📏</span>
+          <span>Kalibreren</span>
+        </button>
+        <button
+          className={interactionMode === 'measure' ? 'active' : ''}
+          onClick={() => setInteractionMode(interactionMode === 'measure' ? 'default' : 'measure')}
+          disabled={!hasScale}
+          title={hasScale ? 'Afstand meten' : 'Kalibreer eerst de schaal'}
+        >
+          <span className="toolbar-icon">📐</span>
+          <span>Meten</span>
+        </button>
       </div>
 
       <div className="toolbar-separator" />
