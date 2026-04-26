@@ -12,17 +12,19 @@ export function ItemsListPopup() {
   const items = useMemo(() => {
     const floor = project.floors.find((f) => f.id === activeFloorId)
     if (!floor) return []
-    return floor.symbols.map((s) => {
-      const def = getSymbolById(s.symbolId)
-      return {
-        id: s.id,
-        symbolId: s.symbolId,
-        type: def?.name ?? s.symbolId,
-        label: s.label ?? '',
-        group: s.group ?? '',
-        location: s.location ?? ''
-      }
-    })
+    return floor.symbols
+      .filter((s) => s.symbolId !== 'tekst' && s.symbolId !== 'persoon')
+      .map((s) => {
+        const def = getSymbolById(s.symbolId)
+        return {
+          id: s.id,
+          symbolId: s.symbolId,
+          type: def?.name ?? s.symbolId,
+          label: s.label ?? '',
+          group: s.group ?? '',
+          location: s.location ?? ''
+        }
+      })
   }, [project, activeFloorId])
 
   if (!itemsListOpen) return null
