@@ -27,7 +27,16 @@ export function ItemsListPopup() {
 
   if (!itemsListOpen) return null
 
-  const tableLines = items.map((i) => `${i.type}\t${i.label}\t${i.group}\t${i.location}`).join('\n')
+  function quoteTSV(value: string): string {
+    if (value.includes('\t') || value.includes('\n') || value.includes('"')) {
+      return '"' + value.replace(/"/g, '""') + '"'
+    }
+    return value
+  }
+
+  const tableLines = items
+    .map((i) => `${quoteTSV(i.type)}\t${quoteTSV(i.label)}\t${quoteTSV(i.group)}\t${quoteTSV(i.location)}`)
+    .join('\n')
   const text = `Type\tLabel\tGroep\tLocatie\n${tableLines}`
 
   const handleCopy = async () => {
@@ -58,7 +67,12 @@ export function ItemsListPopup() {
                   <td>{item.type}</td>
                   <td>{item.label}</td>
                   <td>{item.group}</td>
-                  <td>{item.location}</td>
+                  <td className="items-list-location">{item.location.split('\n').map((line, idx, arr) => (
+                    <span key={idx}>
+                      {line}
+                      {idx < arr.length - 1 && <br />}
+                    </span>
+                  ))}</td>
                 </tr>
               ))}
               {items.length === 0 && (
