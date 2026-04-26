@@ -29,4 +29,6 @@ export interface PlacedSymbol {
   y: number
   rotation: number
   label?: string
+  group?: string
+  location?: string
 }

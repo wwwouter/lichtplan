@@ -13,6 +13,7 @@ export function ContextMenu() {
   const getActiveFloor = useProjectStore((s) => s.getActiveFloor)
   const setSelectedSymbol = useCanvasStore((s) => s.setSelectedSymbol)
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
+  const setPropertyDialog = useUIStore((s) => s.setPropertyDialog)
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
@@ -26,6 +27,8 @@ export function ContextMenu() {
   const symbol = floor?.symbols.find((s) => s.id === contextMenu.symbolId)
   const isTextSymbol = symbol?.symbolId === 'tekst'
   const hasLabel = Boolean(symbol?.label && symbol.label.length > 0)
+  const hasGroup = Boolean(symbol?.group && symbol.group.length > 0)
+  const hasLocation = Boolean(symbol?.location && symbol.location.length > 0)
 
   const handleRotate = (degrees: number) => {
     if (!symbol) return
@@ -45,6 +48,15 @@ export function ContextMenu() {
     setLabelDialog({
       symbolId: contextMenu.symbolId,
       currentLabel: symbol?.label ?? ''
+    })
+    setContextMenu(null)
+  }
+
+  const handleOpenPropertyDialog = () => {
+    setPropertyDialog({
+      symbolId: contextMenu.symbolId,
+      group: symbol?.group ?? '',
+      location: symbol?.location ?? ''
     })
     setContextMenu(null)
   }
@@ -69,11 +81,17 @@ export function ContextMenu() {
       <button className="context-menu-item" onClick={handleAddLabel}>
         {isTextSymbol ? 'Bewerken' : hasLabel ? 'Label bewerken' : 'Label toevoegen'}
       </button>
-      <button className="context-menu-item" onClick={() => {
-        const newId = duplicateSymbol(activeFloorId, contextMenu.symbolId)
-        if (newId) setSelectedSymbol(newId)
-        setContextMenu(null)
-      }}>
+      <button className="context-menu-item" onClick={handleOpenPropertyDialog}>
+        {hasGroup || hasLocation ? 'Groep / Locatie bewerken' : 'Groep & Locatie'}
+      </button>
+      <button
+        className="context-menu-item"
+        onClick={() => {
+          const newId = duplicateSymbol(activeFloorId, contextMenu.symbolId)
+          if (newId) setSelectedSymbol(newId)
+          setContextMenu(null)
+        }}
+      >
         Dupliceren
       </button>
       <div className="context-menu-separator" />

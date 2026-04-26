@@ -5,12 +5,19 @@ interface LabelDialogState {
   currentLabel: string
 }
 
+interface PropertyDialogState {
+  symbolId: string
+  group: string
+  location: string
+}
+
 export type InteractionMode = 'default' | 'calibrate' | 'measure'
 
 interface UIState {
   sidebarCollapsed: boolean
   contextMenu: { x: number; y: number; symbolId: string } | null
   labelDialog: LabelDialogState | null
+  propertyDialog: PropertyDialogState | null
   itemsListOpen: boolean
   expandedCategories: Record<string, boolean>
   hiddenSymbolIds: Set<string>
@@ -21,6 +28,7 @@ interface UIState {
   toggleSidebar: () => void
   setContextMenu: (menu: { x: number; y: number; symbolId: string } | null) => void
   setLabelDialog: (dialog: LabelDialogState | null) => void
+  setPropertyDialog: (dialog: PropertyDialogState | null) => void
   setItemsListOpen: (open: boolean) => void
   toggleCategory: (category: string) => void
   toggleSymbolVisibility: (symbolId: string) => void
@@ -33,6 +41,7 @@ export const useUIStore = create<UIState>((set) => ({
   sidebarCollapsed: false,
   contextMenu: null,
   labelDialog: null,
+  propertyDialog: null,
   itemsListOpen: false,
   expandedCategories: {
     Verlichting: true,
@@ -50,6 +59,8 @@ export const useUIStore = create<UIState>((set) => ({
   setContextMenu: (menu) => set({ contextMenu: menu }),
 
   setLabelDialog: (dialog) => set({ labelDialog: dialog }),
+
+  setPropertyDialog: (dialog) => set({ propertyDialog: dialog }),
 
   setItemsListOpen: (open) => set({ itemsListOpen: open }),
 

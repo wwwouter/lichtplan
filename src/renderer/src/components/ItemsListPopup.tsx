@@ -18,15 +18,17 @@ export function ItemsListPopup() {
         id: s.id,
         symbolId: s.symbolId,
         type: def?.name ?? s.symbolId,
-        label: s.label ?? ''
+        label: s.label ?? '',
+        group: s.group ?? '',
+        location: s.location ?? ''
       }
     })
   }, [project, activeFloorId])
 
   if (!itemsListOpen) return null
 
-  const lines = items.map((i) => `${i.type}\t${i.label}`).join('\n')
-  const text = `Type\tLabel\n${lines}`
+  const tableLines = items.map((i) => `${i.type}\t${i.label}\t${i.group}\t${i.location}`).join('\n')
+  const text = `Type\tLabel\tGroep\tLocatie\n${tableLines}`
 
   const handleCopy = async () => {
     try {
@@ -46,6 +48,8 @@ export function ItemsListPopup() {
               <tr>
                 <th>Type</th>
                 <th>Label</th>
+                <th>Groep</th>
+                <th>Locatie</th>
               </tr>
             </thead>
             <tbody>
@@ -53,11 +57,13 @@ export function ItemsListPopup() {
                 <tr key={item.id}>
                   <td>{item.type}</td>
                   <td>{item.label}</td>
+                  <td>{item.group}</td>
+                  <td>{item.location}</td>
                 </tr>
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={2} className="items-list-empty">
+                  <td colSpan={4} className="items-list-empty">
                     Geen items op deze vloer.
                   </td>
                 </tr>

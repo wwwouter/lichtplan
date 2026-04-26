@@ -522,6 +522,21 @@ body {
   font-size: 14px;
 }
 
+/* === Property Dialog === */
+.property-field {
+  margin-bottom: 12px;
+}
+
+.property-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* === Items List Popup === */
 .items-list-dialog {
   min-width: 400px;
