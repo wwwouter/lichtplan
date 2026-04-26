@@ -1,5 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useState } from 'react'
-import { Group, Text, Rect } from 'react-konva'
+import { Group, Text, Rect, Circle } from 'react-konva'
 import Konva from 'konva'
 import { PlacedSymbol } from '../types/project'
 import { SymbolDefinition, CATEGORY_COLORS } from '../symbols'
@@ -82,6 +82,9 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
               fill="transparent"
             />
             <SymbolRenderer shapes={definition.shapes} color={color} offsetX={offsetX} offsetY={offsetY} />
+            {symbol.group && (
+              <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} />
+            )}
             {isSelected && (
               <SelectionOutline width={definition.width} height={definition.height} offsetX={offsetX} offsetY={offsetY} />
             )}
@@ -224,6 +227,32 @@ function SymbolLabel({
         listening={false}
       />
     </>
+  )
+}
+
+function GroupBadge({ group, offsetX, offsetY }: { group: string; offsetX: number; offsetY: number }) {
+  const radius = 9
+  const x = offsetX - radius
+  const y = -offsetY - radius
+  const display = group.slice(0, 2).toUpperCase()
+
+  return (
+    <Group x={x} y={y} listening={false}>
+      <Circle radius={radius} fill="#000000" />
+      <Text
+        text={display}
+        fill="#ffffff"
+        fontSize={10}
+        fontStyle="bold"
+        align="center"
+        verticalAlign="middle"
+        width={radius * 2}
+        height={radius * 2}
+        x={-radius}
+        y={-radius + 1}
+        listening={false}
+      />
+    </Group>
   )
 }
 

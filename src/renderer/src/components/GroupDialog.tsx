@@ -43,6 +43,7 @@ export function GroupDialog() {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          maxLength={2}
           placeholder="Voer een groep in..."
         />
         <div className="dialog-actions">
