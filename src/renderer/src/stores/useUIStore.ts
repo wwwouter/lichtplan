@@ -5,10 +5,14 @@ interface LabelDialogState {
   currentLabel: string
 }
 
-interface PropertyDialogState {
+interface GroupDialogState {
   symbolId: string
-  group: string
-  location: string
+  currentGroup: string
+}
+
+interface LocationDialogState {
+  symbolId: string
+  currentLocation: string
 }
 
 export type InteractionMode = 'default' | 'calibrate' | 'measure'
@@ -17,7 +21,8 @@ interface UIState {
   sidebarCollapsed: boolean
   contextMenu: { x: number; y: number; symbolId: string } | null
   labelDialog: LabelDialogState | null
-  propertyDialog: PropertyDialogState | null
+  groupDialog: GroupDialogState | null
+  locationDialog: LocationDialogState | null
   itemsListOpen: boolean
   expandedCategories: Record<string, boolean>
   hiddenSymbolIds: Set<string>
@@ -28,7 +33,8 @@ interface UIState {
   toggleSidebar: () => void
   setContextMenu: (menu: { x: number; y: number; symbolId: string } | null) => void
   setLabelDialog: (dialog: LabelDialogState | null) => void
-  setPropertyDialog: (dialog: PropertyDialogState | null) => void
+  setGroupDialog: (dialog: GroupDialogState | null) => void
+  setLocationDialog: (dialog: LocationDialogState | null) => void
   setItemsListOpen: (open: boolean) => void
   toggleCategory: (category: string) => void
   toggleSymbolVisibility: (symbolId: string) => void
@@ -41,7 +47,8 @@ export const useUIStore = create<UIState>((set) => ({
   sidebarCollapsed: false,
   contextMenu: null,
   labelDialog: null,
-  propertyDialog: null,
+  groupDialog: null,
+  locationDialog: null,
   itemsListOpen: false,
   expandedCategories: {
     Verlichting: true,
@@ -60,7 +67,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   setLabelDialog: (dialog) => set({ labelDialog: dialog }),
 
-  setPropertyDialog: (dialog) => set({ propertyDialog: dialog }),
+  setGroupDialog: (dialog) => set({ groupDialog: dialog }),
+
+  setLocationDialog: (dialog) => set({ locationDialog: dialog }),
 
   setItemsListOpen: (open) => set({ itemsListOpen: open }),
 

@@ -9,7 +9,8 @@ import { LabelDialog } from './components/LabelDialog'
 import { LoadingOverlay } from './components/LoadingOverlay'
 import { CalibrationDialog } from './components/CalibrationDialog'
 import { ItemsListPopup } from './components/ItemsListPopup'
-import { SymbolPropertyDialog } from './components/SymbolPropertyDialog'
+import { GroupDialog } from './components/GroupDialog'
+import { LocationDialog } from './components/LocationDialog'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useFileOperations } from './hooks/useFileOperations'
 import { useProjectStore } from './stores/useProjectStore'
@@ -77,7 +78,8 @@ function App(): JSX.Element {
       <LabelDialog />
       <CalibrationDialog />
       <ItemsListPopup />
-      <SymbolPropertyDialog />
+      <GroupDialog />
+      <LocationDialog />
       <LoadingOverlay />
     </div>
   )

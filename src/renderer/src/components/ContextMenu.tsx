@@ -13,7 +13,8 @@ export function ContextMenu() {
   const getActiveFloor = useProjectStore((s) => s.getActiveFloor)
   const setSelectedSymbol = useCanvasStore((s) => s.setSelectedSymbol)
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
-  const setPropertyDialog = useUIStore((s) => s.setPropertyDialog)
+  const setGroupDialog = useUIStore((s) => s.setGroupDialog)
+  const setLocationDialog = useUIStore((s) => s.setLocationDialog)
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
@@ -52,11 +53,18 @@ export function ContextMenu() {
     setContextMenu(null)
   }
 
-  const handleOpenPropertyDialog = () => {
-    setPropertyDialog({
+  const handleOpenGroupDialog = () => {
+    setGroupDialog({
       symbolId: contextMenu.symbolId,
-      group: symbol?.group ?? '',
-      location: symbol?.location ?? ''
+      currentGroup: symbol?.group ?? ''
+    })
+    setContextMenu(null)
+  }
+
+  const handleOpenLocationDialog = () => {
+    setLocationDialog({
+      symbolId: contextMenu.symbolId,
+      currentLocation: symbol?.location ?? ''
     })
     setContextMenu(null)
   }
@@ -81,9 +89,14 @@ export function ContextMenu() {
       <button className="context-menu-item" onClick={handleAddLabel}>
         {isTextSymbol ? 'Bewerken' : hasLabel ? 'Label bewerken' : 'Label toevoegen'}
       </button>
-      <button className="context-menu-item" onClick={handleOpenPropertyDialog}>
-        {hasGroup || hasLocation ? 'Groep / Locatie bewerken' : 'Groep & Locatie'}
+      <button className="context-menu-item" onClick={handleOpenGroupDialog}>
+        {hasGroup ? 'Groep bewerken' : 'Groep toevoegen'}
       </button>
+      {!isTextSymbol && (
+        <button className="context-menu-item" onClick={handleOpenLocationDialog}>
+          {hasLocation ? 'Locatie bewerken' : 'Locatie toevoegen'}
+        </button>
+      )}
       <button
         className="context-menu-item"
         onClick={() => {
