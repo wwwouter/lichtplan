@@ -13,9 +13,10 @@ interface Props {
   definition: SymbolDefinition
   floorId: string
   isSelected: boolean
+  labelOffsetX?: number
 }
 
-export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
+export function SymbolNode({ symbol, definition, floorId, isSelected, labelOffsetX = 0 }: Props) {
   const groupRef = useRef<Konva.Group>(null)
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const setSelectedSymbol = useCanvasStore((s) => s.setSelectedSymbol)
@@ -90,18 +91,22 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
             <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} />
           )}
           {symbol.itemId && (
-            <SymbolLabel
-              text={symbol.label ? `[${symbol.itemId}] - ${symbol.label}` : `[${symbol.itemId}]`}
-              y={offsetY + 4}
-              minWidth={definition.width}
-            />
+            <Group x={labelOffsetX}>
+              <SymbolLabel
+                text={symbol.label ? `[${symbol.itemId}]\n${symbol.label}` : `[${symbol.itemId}]`}
+                y={offsetY + 4}
+                minWidth={definition.width}
+              />
+            </Group>
           )}
           {!symbol.itemId && symbol.label && (
-            <SymbolLabel
-              text={symbol.label}
-              y={offsetY + 4}
-              minWidth={definition.width}
-            />
+            <Group x={labelOffsetX}>
+              <SymbolLabel
+                text={symbol.label}
+                y={offsetY + 4}
+                minWidth={definition.width}
+              />
+            </Group>
           )}
         </>
       )}

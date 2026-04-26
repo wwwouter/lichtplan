@@ -24,7 +24,7 @@ export function IdDialog() {
 
   if (!idDialog) return null
 
-  const isDuplicate = value && existingIds?.includes(value)
+  const isDuplicate = value && value !== idDialog.currentId && existingIds?.includes(value)
 
   const handleSubmit = () => {
     const cleaned = value.trim()
