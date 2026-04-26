@@ -89,7 +89,14 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
           {symbol.group && (
             <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} />
           )}
-          {symbol.label && (
+          {symbol.itemId && (
+            <SymbolLabel
+              text={symbol.label ? `[${symbol.itemId}] - ${symbol.label}` : `[${symbol.itemId}]`}
+              y={offsetY + 4}
+              minWidth={definition.width}
+            />
+          )}
+          {!symbol.itemId && symbol.label && (
             <SymbolLabel
               text={symbol.label}
               y={offsetY + 4}

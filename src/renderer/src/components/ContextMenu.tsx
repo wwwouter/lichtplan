@@ -15,6 +15,8 @@ export function ContextMenu() {
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
   const setGroupDialog = useUIStore((s) => s.setGroupDialog)
   const setLocationDialog = useUIStore((s) => s.setLocationDialog)
+  const setIdDialog = useUIStore((s) => s.setIdDialog)
+  const setDescriptionDialog = useUIStore((s) => s.setDescriptionDialog)
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
@@ -30,6 +32,9 @@ export function ContextMenu() {
   const hasLabel = Boolean(symbol?.label && symbol.label.length > 0)
   const hasGroup = Boolean(symbol?.group && symbol.group.length > 0)
   const hasLocation = Boolean(symbol?.location && symbol.location.length > 0)
+  const itemId = symbol?.itemId
+  const hasId = Boolean(itemId && itemId.length > 0)
+  const hasDescription = Boolean(symbol?.description && symbol.description.length > 0)
 
   const handleRotate = (degrees: number) => {
     if (!symbol) return
@@ -69,6 +74,22 @@ export function ContextMenu() {
     setContextMenu(null)
   }
 
+  const handleOpenIdDialog = () => {
+    setIdDialog({
+      symbolId: contextMenu.symbolId,
+      currentId: symbol?.itemId ?? ''
+    })
+    setContextMenu(null)
+  }
+
+  const handleOpenDescriptionDialog = () => {
+    setDescriptionDialog({
+      symbolId: contextMenu.symbolId,
+      currentDescription: symbol?.description ?? ''
+    })
+    setContextMenu(null)
+  }
+
   return (
     <div
       ref={menuRef}
@@ -97,6 +118,12 @@ export function ContextMenu() {
           {hasLocation ? 'Locatie bewerken' : 'Locatie toevoegen'}
         </button>
       )}
+      <button className="context-menu-item" onClick={handleOpenIdDialog}>
+        {hasId ? 'Nummer bewerken' : 'Nummer toevoegen'}
+      </button>
+      <button className="context-menu-item" onClick={handleOpenDescriptionDialog}>
+        {hasDescription ? 'Omschrijving bewerken' : 'Omschrijving toevoegen'}
+      </button>
       <button
         className="context-menu-item"
         onClick={() => {

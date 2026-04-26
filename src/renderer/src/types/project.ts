@@ -31,4 +31,6 @@ export interface PlacedSymbol {
   label?: string
   group?: string
   location?: string
+  description?: string
+  itemId?: string
 }

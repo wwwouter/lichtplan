@@ -522,6 +522,28 @@ body {
   font-size: 14px;
 }
 
+.items-list-sortable-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.items-list-sortable-header:hover {
+  background: #e2e8f0;
+}
+
+.items-list-sortable-header.sorted {
+  background: #dbeafe;
+}
+
+.sort-order {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  color: #3b82f6;
+  margin-left: 3px;
+  vertical-align: super;
+}
+
 /* === Items List Popup === */
 .items-list-dialog {
   min-width: 400px;

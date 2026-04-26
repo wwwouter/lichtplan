@@ -76,6 +76,34 @@ function clearHistory(): void {
   history = { past: [], future: [] }
 }
 
+function getMaxItemId(symbols: PlacedSymbol[]): number {
+  return symbols.reduce((max, s) => {
+    const n = parseInt(s.itemId ?? '', 10)
+    return !isNaN(n) && n > max ? n : max
+  }, 0)
+}
+
+function nextItemId(symbols: PlacedSymbol[]): string {
+  const max = getMaxItemId(symbols)
+  return String(max + 1).padStart(3, '0')
+}
+
+function assignMissingItemIds(project: Project): Project {
+  return {
+    ...project,
+    floors: project.floors.map((floor) => {
+      let curr = getMaxItemId(floor.symbols)
+      return {
+        ...floor,
+        symbols: floor.symbols.map((s) => ({
+          ...s,
+          itemId: s.itemId ?? String((curr += 1)).padStart(3, '0')
+        }))
+      }
+    })
+  }
+}
+
 export const useProjectStore = create<ProjectState>((set, get) => {
   const defaultProject = createDefaultProject()
 
@@ -146,9 +174,10 @@ export const useProjectStore = create<ProjectState>((set, get) => {
 
     setProject: (project, filePath) => {
       clearHistory()
+      const assigned = assignMissingItemIds(project)
       set({
-        project,
-        activeFloorId: project.floors[0]?.id ?? '',
+        project: assigned,
+        activeFloorId: assigned.floors[0]?.id ?? '',
         filePath: filePath ?? null,
         isDirty: false,
         canUndo: false,
@@ -244,16 +273,21 @@ export const useProjectStore = create<ProjectState>((set, get) => {
     },
 
     addSymbol: (floorId, symbol) =>
-      setWithHistory((state) => ({
-        project: {
-          ...state.project,
-          floors: state.project.floors.map((f) =>
-            f.id === floorId ? { ...f, symbols: [...f.symbols, symbol] } : f
-          ),
-          updatedAt: new Date().toISOString()
-        },
-        isDirty: true
-      })),
+      setWithHistory((state) => {
+        const floor = state.project.floors.find((f) => f.id === floorId)
+        const itemId = symbol.itemId ?? nextItemId(floor?.symbols ?? [])
+        const enriched = { ...symbol, itemId }
+        return {
+          project: {
+            ...state.project,
+            floors: state.project.floors.map((f) =>
+              f.id === floorId ? { ...f, symbols: [...f.symbols, enriched] } : f
+            ),
+            updatedAt: new Date().toISOString()
+          },
+          isDirty: true
+        }
+      }),
 
     updateSymbol: (floorId, symbolId, updates) =>
       setWithHistory((state) => ({
@@ -296,9 +330,11 @@ export const useProjectStore = create<ProjectState>((set, get) => {
 
       const OFFSET = 30
       const newId = uuidv4()
+      const itemId = nextItemId(floor?.symbols ?? [])
       const duplicate: PlacedSymbol = {
         ...original,
         id: newId,
+        itemId,
         x: original.x + OFFSET,
         y: original.y + OFFSET
       }

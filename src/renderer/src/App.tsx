@@ -11,6 +11,8 @@ import { CalibrationDialog } from './components/CalibrationDialog'
 import { ItemsListPopup } from './components/ItemsListPopup'
 import { GroupDialog } from './components/GroupDialog'
 import { LocationDialog } from './components/LocationDialog'
+import { IdDialog } from './components/IdDialog'
+import { DescriptionDialog } from './components/DescriptionDialog'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useFileOperations } from './hooks/useFileOperations'
 import { useProjectStore } from './stores/useProjectStore'
@@ -80,6 +82,8 @@ function App(): JSX.Element {
       <ItemsListPopup />
       <GroupDialog />
       <LocationDialog />
+      <IdDialog />
+      <DescriptionDialog />
       <LoadingOverlay />
     </div>
   )
