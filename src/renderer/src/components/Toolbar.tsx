@@ -21,6 +21,7 @@ export function Toolbar({ stageRef }: Props) {
 
   const interactionMode = useUIStore((s) => s.interactionMode)
   const setInteractionMode = useUIStore((s) => s.setInteractionMode)
+  const setItemsListOpen = useUIStore((s) => s.setItemsListOpen)
 
   const activeFloor = project.floors.find((f) => f.id === activeFloorId)
   const hasContent = !!(activeFloor?.floorPlanImage || (activeFloor?.symbols.length ?? 0) > 0)
@@ -139,6 +140,15 @@ export function Toolbar({ stageRef }: Props) {
         >
           <span className="toolbar-icon">📐</span>
           <span>Meten</span>
+        </button>
+      </div>
+
+      <div className="toolbar-separator" />
+
+      <div className="toolbar-group">
+        <button onClick={() => setItemsListOpen(true)} title="Items lijst">
+          <span className="toolbar-icon">📋</span>
+          <span>Items</span>
         </button>
       </div>
 

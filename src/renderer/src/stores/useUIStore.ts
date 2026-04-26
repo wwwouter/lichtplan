@@ -11,6 +11,7 @@ interface UIState {
   sidebarCollapsed: boolean
   contextMenu: { x: number; y: number; symbolId: string } | null
   labelDialog: LabelDialogState | null
+  itemsListOpen: boolean
   expandedCategories: Record<string, boolean>
   hiddenSymbolIds: Set<string>
   loading: string | null
@@ -20,6 +21,7 @@ interface UIState {
   toggleSidebar: () => void
   setContextMenu: (menu: { x: number; y: number; symbolId: string } | null) => void
   setLabelDialog: (dialog: LabelDialogState | null) => void
+  setItemsListOpen: (open: boolean) => void
   toggleCategory: (category: string) => void
   toggleSymbolVisibility: (symbolId: string) => void
   setLoading: (message: string | null) => void
@@ -31,6 +33,7 @@ export const useUIStore = create<UIState>((set) => ({
   sidebarCollapsed: false,
   contextMenu: null,
   labelDialog: null,
+  itemsListOpen: false,
   expandedCategories: {
     Verlichting: true,
     Elektra: true,
@@ -47,6 +50,8 @@ export const useUIStore = create<UIState>((set) => ({
   setContextMenu: (menu) => set({ contextMenu: menu }),
 
   setLabelDialog: (dialog) => set({ labelDialog: dialog }),
+
+  setItemsListOpen: (open) => set({ itemsListOpen: open }),
 
   toggleCategory: (category) =>
     set((state) => ({

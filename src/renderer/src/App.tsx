@@ -8,6 +8,7 @@ import { ContextMenu } from './components/ContextMenu'
 import { LabelDialog } from './components/LabelDialog'
 import { LoadingOverlay } from './components/LoadingOverlay'
 import { CalibrationDialog } from './components/CalibrationDialog'
+import { ItemsListPopup } from './components/ItemsListPopup'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useFileOperations } from './hooks/useFileOperations'
 import { useProjectStore } from './stores/useProjectStore'
@@ -74,6 +75,7 @@ function App(): JSX.Element {
       <ContextMenu />
       <LabelDialog />
       <CalibrationDialog />
+      <ItemsListPopup />
       <LoadingOverlay />
     </div>
   )
