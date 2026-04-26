@@ -82,13 +82,13 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
               fill="transparent"
             />
             <SymbolRenderer shapes={definition.shapes} color={color} offsetX={offsetX} offsetY={offsetY} />
-            {symbol.group && (
-              <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} />
-            )}
             {isSelected && (
               <SelectionOutline width={definition.width} height={definition.height} offsetX={offsetX} offsetY={offsetY} />
             )}
           </Group>
+          {symbol.group && (
+            <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} />
+          )}
           {symbol.label && (
             <SymbolLabel
               text={symbol.label}
