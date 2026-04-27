@@ -90,18 +90,17 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
             )}
           </Group>
           {showGroup && symbol.group && (
-            <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} />
+            <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} definitionWidth={definition.width} />
           )}
-          {showItemId && symbol.itemId && (
+          {(showItemId || showLabel) && (symbol.itemId || symbol.label) && (
             <SymbolLabel
-              text={showLabel && symbol.label ? `[${symbol.itemId}]\n${symbol.label}` : `[${symbol.itemId}]`}
-              y={offsetY + 4}
-              minWidth={definition.width}
-            />
-          )}
-          {showLabel && !symbol.itemId && symbol.label && (
-            <SymbolLabel
-              text={symbol.label}
+              text={
+                showItemId && symbol.itemId
+                  ? showLabel && symbol.label
+                    ? `[${symbol.itemId}]\n${symbol.label}`
+                    : `[${symbol.itemId}]`
+                  : symbol.label ?? ''
+              }
               y={offsetY + 4}
               minWidth={definition.width}
             />
@@ -240,10 +239,10 @@ function SymbolLabel({
   )
 }
 
-function GroupBadge({ group, offsetX, offsetY }: { group: string; offsetX: number; offsetY: number }) {
+function GroupBadge({ group, offsetX, offsetY, definitionWidth }: { group: string; offsetX: number; offsetY: number; definitionWidth: number }) {
   const radius = 9
-  // bottom-left corner, slightly overlapping the icon edge
-  const x = -offsetX - radius
+  // bottom-left at 25% of icon width from left edge
+  const x = -offsetX + definitionWidth * 0.25
   const y = offsetY - radius
   const display = group.slice(0, 2).toUpperCase()
 

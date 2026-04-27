@@ -29,6 +29,7 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@playwright/cli": "^0.1.9",
     "jspdf": "^4.1.0",
     "konva": "^10.2.0",
     "react-konva": "^19.2.2",
