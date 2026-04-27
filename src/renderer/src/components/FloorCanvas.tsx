@@ -23,7 +23,7 @@ export function FloorCanvas({ stageRef }: Props) {
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const addSymbol = useProjectStore((s) => s.addSymbol)
 
-  const { stageX, stageY, scale, selectedSymbolId, setStagePosition, setScale } =
+  const { stageX, stageY, scale, selectedSymbolId, setStagePosition, setScale, setSelectedSymbol } =
     useCanvasStore()
   const setContextMenu = useUIStore((s) => s.setContextMenu)
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
