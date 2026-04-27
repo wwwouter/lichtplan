@@ -38,6 +38,9 @@ interface UIState {
   itemsListOpen: boolean
   expandedCategories: Record<string, boolean>
   hiddenSymbolIds: Set<string>
+  showItemId: boolean
+  showGroup: boolean
+  showLabel: boolean
   loading: string | null
   interactionMode: InteractionMode
   calibrationPixels: number | null
@@ -55,6 +58,9 @@ interface UIState {
   setLoading: (message: string | null) => void
   setInteractionMode: (mode: InteractionMode) => void
   setCalibrationPixels: (pixels: number | null) => void
+  toggleShowItemId: () => void
+  toggleShowGroup: () => void
+  toggleShowLabel: () => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -73,6 +79,9 @@ export const useUIStore = create<UIState>((set) => ({
     Overig: true
   },
   hiddenSymbolIds: new Set(),
+  showItemId: true,
+  showGroup: true,
+  showLabel: true,
   loading: null,
   interactionMode: 'default',
   calibrationPixels: null,
@@ -113,5 +122,11 @@ export const useUIStore = create<UIState>((set) => ({
 
   setInteractionMode: (mode) => set({ interactionMode: mode, calibrationPixels: null }),
 
-  setCalibrationPixels: (pixels) => set({ calibrationPixels: pixels })
+  setCalibrationPixels: (pixels) => set({ calibrationPixels: pixels }),
+
+  toggleShowItemId: () => set((state) => ({ showItemId: !state.showItemId })),
+
+  toggleShowGroup: () => set((state) => ({ showGroup: !state.showGroup })),
+
+  toggleShowLabel: () => set((state) => ({ showLabel: !state.showLabel }))
 }))

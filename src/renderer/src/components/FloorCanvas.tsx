@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState, useMemo } from 'react'
+import { useRef, useCallback, useEffect, useState } from 'react'
 import { Stage, Layer, Line, Circle, Text, Rect } from 'react-konva'
 import Konva from 'konva'
 import { v4 as uuidv4 } from 'uuid'
@@ -23,7 +23,7 @@ export function FloorCanvas({ stageRef }: Props) {
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const addSymbol = useProjectStore((s) => s.addSymbol)
 
-  const { stageX, stageY, scale, selectedSymbolId, setStagePosition, setScale, setSelectedSymbol } =
+  const { stageX, stageY, scale, selectedSymbolId, setStagePosition, setScale } =
     useCanvasStore()
   const setContextMenu = useUIStore((s) => s.setContextMenu)
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
@@ -199,66 +199,6 @@ export function FloorCanvas({ stageRef }: Props) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [interactionMode, setInteractionMode])
 
-  const labelOffsets = useMemo(() => {
-    const offsets = new Map<string, number>()
-    if (!floor) return offsets
-    const OVERLAP = 3
-    const fontSize = 11
-    const lineHeight = 1
-    const padY = 1
-
-    const candidates = [...floor.symbols]
-      .filter((s) => (s.itemId || s.label) && s.symbolId !== 'tekst')
-      // priority: higher Y first, then lower X first
-      .sort((a, b) => (a.y !== b.y ? b.y - a.y : a.x - b.x))
-
-    interface Box { left: number; right: number; top: number; bottom: number }
-    const boxes: Box[] = []
-
-    for (const s of candidates) {
-      const def = getSymbolById(s.symbolId)
-      if (!def) continue
-
-      const textLines = s.itemId
-        ? (s.label ? [`[${s.itemId}]`, s.label] : [`[${s.itemId}]`])
-        : [s.label!]
-
-      const longest = textLines.reduce((m, t) => Math.max(m, t.length), 0)
-      const w = Math.max(def.width, Math.ceil(longest * fontSize * 0.62))
-      const h = textLines.length * fontSize * lineHeight + padY * 2
-      const myX = s.x
-      const myTop = s.y + def.height / 2 + 4 - padY
-      const myBottom = myTop + h
-      const myLeftBase = myX - w / 2
-
-      let shift = 0
-      for (const b of boxes) {
-        // vertical overlap > OVERLAP? (allow 3px overlap)
-        if (myTop < b.bottom - OVERLAP && myBottom > b.top + OVERLAP) {
-          const myLeft = myLeftBase + shift
-          const myRight = myLeft + w
-          // horizontal overlap > OVERLAP?
-          if (myLeft < b.right - OVERLAP && myRight > b.left + OVERLAP) {
-            const needed = b.right - OVERLAP - myLeftBase
-            if (needed > shift) shift = needed
-          }
-        }
-      }
-      if (shift > 0) offsets.set(s.id, shift)
-
-      const offset = offsets.get(s.id) ?? 0
-      boxes.push({
-        left: myLeftBase + offset,
-        right: myLeftBase + offset + w,
-        top: myTop,
-        bottom: myBottom,
-      })
-    }
-    return offsets
-  }, [floor])
-
-  if (!floor) return null
-
   const cursorStyle =
     interactionMode === 'calibrate' || interactionMode === 'measure' ? 'crosshair' : undefined
 
@@ -298,7 +238,6 @@ export function FloorCanvas({ stageRef }: Props) {
                 definition={def}
                 floorId={activeFloorId}
                 isSelected={selectedSymbolId === sym.id}
-                labelOffsetX={labelOffsets.get(sym.id) ?? 0}
               />
             )
           })}

@@ -2,13 +2,30 @@ import { SYMBOLS_BY_CATEGORY, CATEGORY_COLORS, SymbolCategory } from '../symbols
 import { useUIStore } from '../stores/useUIStore'
 import { SymbolPaletteItem } from './SymbolPaletteItem'
 
+function Toggle({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      className={`visibility-toggle ${active ? 'active' : ''}`}
+      onClick={onClick}
+      title={`${active ? 'Verberg' : 'Toon'} ${label.toLowerCase()}`}
+    >
+      {label}
+    </button>
+  )
+}
+
 export function Sidebar() {
-  const { sidebarCollapsed, expandedCategories, toggleCategory } = useUIStore()
+  const { sidebarCollapsed, expandedCategories, toggleCategory, showItemId, showGroup, showLabel, toggleShowItemId, toggleShowGroup, toggleShowLabel } = useUIStore()
 
   if (sidebarCollapsed) return null
 
   return (
     <div className="sidebar">
+      <div className="visibility-toggles">
+        <Toggle label="ID" active={showItemId} onClick={toggleShowItemId} />
+        <Toggle label="Groep" active={showGroup} onClick={toggleShowGroup} />
+        <Toggle label="Label" active={showLabel} onClick={toggleShowLabel} />
+      </div>
       <div className="sidebar-header">Symbolen</div>
       {Object.values(SymbolCategory).map((category) => {
         const symbols = SYMBOLS_BY_CATEGORY[category]

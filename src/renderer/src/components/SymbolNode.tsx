@@ -13,14 +13,16 @@ interface Props {
   definition: SymbolDefinition
   floorId: string
   isSelected: boolean
-  labelOffsetX?: number
 }
 
-export function SymbolNode({ symbol, definition, floorId, isSelected, labelOffsetX = 0 }: Props) {
+export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
   const groupRef = useRef<Konva.Group>(null)
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const setSelectedSymbol = useCanvasStore((s) => s.setSelectedSymbol)
   const setContextMenu = useUIStore((s) => s.setContextMenu)
+  const showItemId = useUIStore((s) => s.showItemId)
+  const showGroup = useUIStore((s) => s.showGroup)
+  const showLabel = useUIStore((s) => s.showLabel)
 
   const color = CATEGORY_COLORS[definition.category]
   const offsetX = definition.width / 2
@@ -87,26 +89,22 @@ export function SymbolNode({ symbol, definition, floorId, isSelected, labelOffse
               <SelectionOutline width={definition.width} height={definition.height} offsetX={offsetX} offsetY={offsetY} />
             )}
           </Group>
-          {symbol.group && (
+          {showGroup && symbol.group && (
             <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} />
           )}
-          {symbol.itemId && (
-            <Group x={labelOffsetX}>
-              <SymbolLabel
-                text={symbol.label ? `[${symbol.itemId}]\n${symbol.label}` : `[${symbol.itemId}]`}
-                y={offsetY + 4}
-                minWidth={definition.width}
-              />
-            </Group>
+          {showItemId && symbol.itemId && (
+            <SymbolLabel
+              text={showLabel && symbol.label ? `[${symbol.itemId}]\n${symbol.label}` : `[${symbol.itemId}]`}
+              y={offsetY + 4}
+              minWidth={definition.width}
+            />
           )}
-          {!symbol.itemId && symbol.label && (
-            <Group x={labelOffsetX}>
-              <SymbolLabel
-                text={symbol.label}
-                y={offsetY + 4}
-                minWidth={definition.width}
-              />
-            </Group>
+          {showLabel && !symbol.itemId && symbol.label && (
+            <SymbolLabel
+              text={symbol.label}
+              y={offsetY + 4}
+              minWidth={definition.width}
+            />
           )}
         </>
       )}
@@ -244,8 +242,9 @@ function SymbolLabel({
 
 function GroupBadge({ group, offsetX, offsetY }: { group: string; offsetX: number; offsetY: number }) {
   const radius = 9
-  const x = offsetX - radius
-  const y = -offsetY - radius
+  // bottom-left corner, slightly overlapping the icon edge
+  const x = -offsetX - radius
+  const y = offsetY - radius
   const display = group.slice(0, 2).toUpperCase()
 
   return (
