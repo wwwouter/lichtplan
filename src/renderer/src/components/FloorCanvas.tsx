@@ -202,18 +202,18 @@ export function FloorCanvas({ stageRef }: Props) {
   const labelOffsets = useMemo(() => {
     const offsets = new Map<string, number>()
     if (!floor) return offsets
-    const GAP = 12
+    const OVERLAP = 3
     const fontSize = 11
     const lineHeight = 1
     const padY = 1
 
-    interface LabelBox { id: string; x: number; y: number; w: number; h: number }
-    const boxes: LabelBox[] = []
-
-    // Process in visual order — top-to-bottom, then left-to-right
     const candidates = [...floor.symbols]
       .filter((s) => (s.itemId || s.label) && s.symbolId !== 'tekst')
-      .sort((a, b) => (a.y !== b.y ? a.y - b.y : a.x - b.x))
+      // priority: higher Y first, then lower X first
+      .sort((a, b) => (a.y !== b.y ? b.y - a.y : a.x - b.x))
+
+    interface Box { left: number; right: number; top: number; bottom: number }
+    const boxes: Box[] = []
 
     for (const s of candidates) {
       const def = getSymbolById(s.symbolId)
@@ -226,25 +226,33 @@ export function FloorCanvas({ stageRef }: Props) {
       const longest = textLines.reduce((m, t) => Math.max(m, t.length), 0)
       const w = Math.max(def.width, Math.ceil(longest * fontSize * 0.62))
       const h = textLines.length * fontSize * lineHeight + padY * 2
-      const x = s.x
-      const y = s.y + def.height / 2 + 4 - padY
+      const myX = s.x
+      const myTop = s.y + def.height / 2 + 4 - padY
+      const myBottom = myTop + h
+      const myLeftBase = myX - w / 2
 
       let shift = 0
       for (const b of boxes) {
-        const bOffset = offsets.get(b.id) ?? 0
-        const bLeft = b.x - b.w / 2 + bOffset
-        const bRight = b.x + b.w / 2 + bOffset
-        // vertical overlap
-        if (y < b.y + b.h + GAP && y + h > b.y - GAP) {
-          const myLeft = x - w / 2
-          if (myLeft + shift < bRight + GAP && myLeft + shift + w > bLeft - GAP) {
-            const needed = bRight + GAP - myLeft
+        // vertical overlap > OVERLAP? (allow 3px overlap)
+        if (myTop < b.bottom - OVERLAP && myBottom > b.top + OVERLAP) {
+          const myLeft = myLeftBase + shift
+          const myRight = myLeft + w
+          // horizontal overlap > OVERLAP?
+          if (myLeft < b.right - OVERLAP && myRight > b.left + OVERLAP) {
+            const needed = b.right - OVERLAP - myLeftBase
             if (needed > shift) shift = needed
           }
         }
       }
       if (shift > 0) offsets.set(s.id, shift)
-      boxes.push({ id: s.id, x, y, w, h })
+
+      const offset = offsets.get(s.id) ?? 0
+      boxes.push({
+        left: myLeftBase + offset,
+        right: myLeftBase + offset + w,
+        top: myTop,
+        bottom: myBottom,
+      })
     }
     return offsets
   }, [floor])
