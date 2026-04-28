@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useProjectStore } from '../stores/useProjectStore'
 import { getSymbolById } from '../symbols'
 import { useUIStore } from '../stores/useUIStore'
@@ -6,15 +6,29 @@ import { useUIStore } from '../stores/useUIStore'
 type SortDir = 'asc' | 'desc'
 interface SortEntry { key: string; dir: SortDir }
 
+interface EditingCell { id: string; field: string }
+
 export function ItemsListPopup() {
   const itemsListOpen = useUIStore((s) => s.itemsListOpen)
   const setItemsListOpen = useUIStore((s) => s.setItemsListOpen)
   const project = useProjectStore((s) => s.project)
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
+  const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const [sorts, setSorts] = useState<SortEntry[]>([])
+  const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
+
+  const floor = project.floors.find((f) => f.id === activeFloorId)
+
+  const isDuplicateItemId = useCallback(
+    (symbolId: string, value: string) => {
+      const trimmed = value.trim()
+      if (!trimmed) return false
+      return floor?.symbols.some((s) => s.id !== symbolId && s.itemId === trimmed) ?? false
+    },
+    [floor]
+  )
 
   const items = useMemo(() => {
-    const floor = project.floors.find((f) => f.id === activeFloorId)
     if (!floor) return []
     return floor.symbols
       .filter((s) => s.symbolId !== 'tekst' && s.symbolId !== 'persoon')
@@ -32,13 +46,13 @@ export function ItemsListPopup() {
         }
       })
       .sort((a, b) => a.itemId.localeCompare(b.itemId, 'nl', { numeric: true }))
-  }, [project, activeFloorId])
+  }, [floor])
 
   const sortedItems = useMemo(() => {
-    return [...items].sort((a, b) => {
+    return [...items].sort((a: Record<string, string>, b: Record<string, string>) => {
       for (const s of sorts) {
-        const av = (a as Record<string, string>)[s.key] ?? ''
-        const bv = (b as Record<string, string>)[s.key] ?? ''
+        const av = a[s.key] ?? ''
+        const bv = b[s.key] ?? ''
         const cmp = av.localeCompare(bv, 'nl')
         if (cmp !== 0) return s.dir === 'asc' ? cmp : -cmp
       }
@@ -92,6 +106,20 @@ export function ItemsListPopup() {
     }
   }
 
+  const handleCellSave = (symbolId: string, field: string, _originalValue: string, nextValue: string) => {
+    const trimmed = nextValue.trim()
+    if (field === 'itemId') {
+      if (isDuplicateItemId(symbolId, trimmed)) {
+        setEditingCell(null)
+        return
+      }
+      updateSymbol(activeFloorId, symbolId, { itemId: trimmed || undefined })
+    } else {
+      updateSymbol(activeFloorId, symbolId, { [field]: trimmed || undefined })
+    }
+    setEditingCell(null)
+  }
+
   if (!itemsListOpen) return null
 
   const SortableHeader = ({ colKey, label }: { colKey: string; label: string }) => {
@@ -113,6 +141,87 @@ export function ItemsListPopup() {
     )
   }
 
+  function InlineCell({
+    item,
+    field,
+    multiline = false
+  }: {
+    item: { id: string } & Record<string, string>
+    field: string
+    multiline?: boolean
+  }) {
+    const isEditing = editingCell?.id === item.id && editingCell?.field === field
+    const value = item[field] ?? ''
+    const inputRef = useRef<HTMLInputElement>(null)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+    useEffect(() => {
+      if (isEditing) {
+        const el = multiline ? textareaRef.current : inputRef.current
+        if (el) {
+          el.focus()
+          el.select()
+        }
+      }
+    }, [isEditing, multiline])
+
+    if (isEditing) {
+      if (multiline) {
+        return (
+          <textarea
+            ref={textareaRef}
+            className="items-list-cell-textarea"
+            defaultValue={value}
+            rows={2}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                handleCellSave(item.id, field, value, e.currentTarget.value)
+              }
+              if (e.key === 'Escape') {
+                setEditingCell(null)
+              }
+            }}
+            onBlur={(e) => handleCellSave(item.id, field, value, e.target.value)}
+          />
+        )
+      }
+      return (
+        <input
+          ref={inputRef}
+          className="items-list-cell-input"
+          type="text"
+          defaultValue={value}
+          maxLength={field === 'itemId' ? 3 : undefined}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleCellSave(item.id, field, value, e.currentTarget.value)
+            }
+            if (e.key === 'Escape') {
+              setEditingCell(null)
+            }
+          }}
+          onBlur={(e) => handleCellSave(item.id, field, value, e.target.value)}
+        />
+      )
+    }
+
+    if (multiline) {
+      return (
+        <span onClick={() => setEditingCell({ id: item.id, field })}>
+          {value.split('\n').map((line, idx, arr) => (
+            <span key={idx}>
+              {line}
+              {idx < arr.length - 1 && <br />}
+            </span>
+          ))}
+        </span>
+      )
+    }
+
+    return <span onClick={() => setEditingCell({ id: item.id, field })}>{value}</span>
+  }
+
   return (
     <div className="dialog-overlay" onClick={() => setItemsListOpen(false)}>
       <div className="dialog items-list-dialog" onClick={(e) => e.stopPropagation()}>
@@ -132,26 +241,12 @@ export function ItemsListPopup() {
             <tbody>
               {sortedItems.map((item) => (
                 <tr key={item.id}>
-                  <td>{item.itemId}</td>
+                  <td><InlineCell item={item} field="itemId" /></td>
                   <td>{item.type}</td>
-                  <td>{item.label}</td>
-                  <td>{item.group}</td>
-                  <td className="items-list-location">
-                    {item.location.split('\n').map((line, idx, arr) => (
-                      <span key={idx}>
-                        {line}
-                        {idx < arr.length - 1 && <br />}
-                      </span>
-                    ))}
-                  </td>
-                  <td className="items-list-location">
-                    {item.description.split('\n').map((line, idx, arr) => (
-                      <span key={idx}>
-                        {line}
-                        {idx < arr.length - 1 && <br />}
-                      </span>
-                    ))}
-                  </td>
+                  <td><InlineCell item={item} field="label" /></td>
+                  <td><InlineCell item={item} field="group" /></td>
+                  <td className="items-list-location"><InlineCell item={item} field="location" multiline /></td>
+                  <td className="items-list-location"><InlineCell item={item} field="description" multiline /></td>
                 </tr>
               ))}
               {sortedItems.length === 0 && (

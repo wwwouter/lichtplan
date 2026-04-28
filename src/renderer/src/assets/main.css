@@ -637,3 +637,44 @@ body {
   text-align: center;
   padding: 16px;
 }
+
+.items-list-table td {
+  cursor: pointer;
+}
+
+.items-list-cell-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #3B82F6;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  background: #ffffff;
+  box-sizing: border-box;
+  color: #111827;
+}
+
+.items-list-cell-textarea {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #3B82F6;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  background: #ffffff;
+  box-sizing: border-box;
+  resize: vertical;
+  color: #111827;
+}
+
+.items-list-table td .items-list-cell-input,
+.items-list-table td .items-list-cell-textarea {
+  padding: 4px 6px;
+}
+
+.items-list-table td span {
+  display: block;
+  min-height: 16px;
+}
