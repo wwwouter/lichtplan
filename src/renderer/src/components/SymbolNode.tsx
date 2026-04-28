@@ -241,8 +241,8 @@ function SymbolLabel({
 
 function GroupBadge({ group, offsetX, offsetY, definitionWidth }: { group: string; offsetX: number; offsetY: number; definitionWidth: number }) {
   const radius = 9
-  // bottom-left at 25% of icon width from left edge
-  const x = -offsetX + definitionWidth * 0.25
+  // bottom-left at 12.5% of icon width
+  const x = -offsetX + definitionWidth * 0.125
   const y = offsetY - radius
   const display = group.slice(0, 2).toUpperCase()
 

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { ALL_SYMBOLS } from '../symbols'
 
 interface LabelDialogState {
   symbolId: string
@@ -61,6 +62,8 @@ interface UIState {
   toggleShowItemId: () => void
   toggleShowGroup: () => void
   toggleShowLabel: () => void
+  showOnlySymbol: (symbolId: string) => void
+  hideOnlySymbol: (symbolId: string) => void
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -128,5 +131,20 @@ export const useUIStore = create<UIState>((set) => ({
 
   toggleShowGroup: () => set((state) => ({ showGroup: !state.showGroup })),
 
-  toggleShowLabel: () => set((state) => ({ showLabel: !state.showLabel }))
+  toggleShowLabel: () => set((state) => ({ showLabel: !state.showLabel })),
+
+  showOnlySymbol: (symbolId) =>
+    set(() => {
+      const next = new Set<string>()
+      ALL_SYMBOLS.forEach((s) => {
+        if (s.id !== symbolId) next.add(s.id)
+      })
+      return { hiddenSymbolIds: next }
+    }),
+
+  hideOnlySymbol: (symbolId) =>
+    set(() => {
+      const next = new Set<string>([symbolId])
+      return { hiddenSymbolIds: next }
+    })
 }))

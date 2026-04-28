@@ -1,6 +1,6 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import Konva from 'konva'
-import { SymbolDefinition, CATEGORY_COLORS } from '../symbols'
+import { SymbolDefinition } from '../symbols'
 import { useUIStore } from '../stores/useUIStore'
 
 interface Props {
@@ -13,6 +13,9 @@ export function SymbolPaletteItem({ symbol, color }: Props) {
   const stageRef = useRef<Konva.Stage | null>(null)
   const hidden = useUIStore((s) => s.hiddenSymbolIds.has(symbol.id))
   const toggleVisibility = useUIStore((s) => s.toggleSymbolVisibility)
+  const showOnlySymbol = useUIStore((s) => s.showOnlySymbol)
+  const hideOnlySymbol = useUIStore((s) => s.hideOnlySymbol)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!canvasRef.current || stageRef.current) return
@@ -118,9 +121,21 @@ export function SymbolPaletteItem({ symbol, color }: Props) {
     }
   }, [symbol, color])
 
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null)
+    window.addEventListener('click', handleClick)
+    return () => window.removeEventListener('click', handleClick)
+  }, [])
+
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData('symbolId', symbol.id)
     e.dataTransfer.effectAllowed = 'copy'
+  }
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setContextMenu({ x: e.clientX, y: e.clientY })
   }
 
   return (
@@ -138,6 +153,7 @@ export function SymbolPaletteItem({ symbol, color }: Props) {
           e.stopPropagation()
           toggleVisibility(symbol.id)
         }}
+        onContextMenu={handleContextMenu}
         title={hidden ? 'Tonen' : 'Verbergen'}
       >
         {hidden ? (
@@ -154,6 +170,32 @@ export function SymbolPaletteItem({ symbol, color }: Props) {
           </svg>
         )}
       </button>
+      {contextMenu && (
+        <div
+          className="context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="context-menu-item"
+            onClick={() => {
+              showOnlySymbol(symbol.id)
+              setContextMenu(null)
+            }}
+          >
+            Alleen dit type tonen
+          </button>
+          <button
+            className="context-menu-item"
+            onClick={() => {
+              hideOnlySymbol(symbol.id)
+              setContextMenu(null)
+            }}
+          >
+            Alleen dit type verbergen
+          </button>
+        </div>
+      )}
     </div>
   )
 }
