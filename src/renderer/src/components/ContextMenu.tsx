@@ -10,6 +10,8 @@ export function ContextMenu() {
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const removeSymbol = useProjectStore((s) => s.removeSymbol)
   const duplicateSymbol = useProjectStore((s) => s.duplicateSymbol)
+  const moveToFront = useProjectStore((s) => s.moveToFront)
+  const moveToBack = useProjectStore((s) => s.moveToBack)
   const getActiveFloor = useProjectStore((s) => s.getActiveFloor)
   const setSelectedSymbol = useCanvasStore((s) => s.setSelectedSymbol)
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
@@ -134,6 +136,29 @@ export function ContextMenu() {
       >
         Dupliceren
       </button>
+      <div className="context-menu-separator" />
+      {!isTextSymbol && (
+        <>
+          <button
+            className="context-menu-item"
+            onClick={() => {
+              moveToFront(activeFloorId, contextMenu.symbolId)
+              setContextMenu(null)
+            }}
+          >
+            Naar voorgrond
+          </button>
+          <button
+            className="context-menu-item"
+            onClick={() => {
+              moveToBack(activeFloorId, contextMenu.symbolId)
+              setContextMenu(null)
+            }}
+          >
+            Naar achtergrond
+          </button>
+        </>
+      )}
       <div className="context-menu-separator" />
       <button className="context-menu-item danger" onClick={handleDelete}>
         Verwijderen

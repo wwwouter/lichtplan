@@ -37,6 +37,8 @@ interface ProjectState {
   updateSymbol: (floorId: string, symbolId: string, updates: Partial<PlacedSymbol>) => void
   removeSymbol: (floorId: string, symbolId: string) => void
   duplicateSymbol: (floorId: string, symbolId: string) => string | null
+  moveToFront: (floorId: string, symbolId: string) => void
+  moveToBack: (floorId: string, symbolId: string) => void
 }
 
 // Internal state not exposed to consumers
@@ -351,6 +353,44 @@ export const useProjectStore = create<ProjectState>((set, get) => {
       }))
 
       return newId
-    }
+    },
+
+    moveToFront: (floorId, symbolId) =>
+      setWithHistory((state) => {
+        const floor = state.project.floors.find((f) => f.id === floorId)
+        const symbols = floor?.symbols ?? []
+        const others = symbols.filter((s) => s.id !== symbolId)
+        const target = symbols.find((s) => s.id === symbolId)
+        if (!target) return { isDirty: false }
+        return {
+          project: {
+            ...state.project,
+            floors: state.project.floors.map((f) =>
+              f.id === floorId ? { ...f, symbols: [...others, target] } : f
+            ),
+            updatedAt: new Date().toISOString()
+          },
+          isDirty: true
+        }
+      }),
+
+    moveToBack: (floorId, symbolId) =>
+      setWithHistory((state) => {
+        const floor = state.project.floors.find((f) => f.id === floorId)
+        const symbols = floor?.symbols ?? []
+        const others = symbols.filter((s) => s.id !== symbolId)
+        const target = symbols.find((s) => s.id === symbolId)
+        if (!target) return { isDirty: false }
+        return {
+          project: {
+            ...state.project,
+            floors: state.project.floors.map((f) =>
+              f.id === floorId ? { ...f, symbols: [target, ...others] } : f
+            ),
+            updatedAt: new Date().toISOString()
+          },
+          isDirty: true
+        }
+      })
   }
 })

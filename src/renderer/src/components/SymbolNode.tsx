@@ -252,7 +252,7 @@ function GroupBadge({ group, offsetX, offsetY, definitionWidth }: { group: strin
       <Text
         text={display}
         fill="#000000"
-        fontSize={10}
+        fontSize={9}
         fontStyle="bold"
         align="center"
         verticalAlign="middle"
