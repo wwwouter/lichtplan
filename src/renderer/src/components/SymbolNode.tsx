@@ -248,11 +248,11 @@ function GroupBadge({ group, offsetX, offsetY, definitionWidth }: { group: strin
 
   return (
     <Group x={x} y={y} listening={false}>
-      <Circle radius={radius} fill="transparent" stroke="#000000" strokeWidth={1} />
+      <Circle radius={radius} fill="#ffffff" stroke="#000000" strokeWidth={1} />
       <Text
         text={display}
         fill="#000000"
-        fontSize={9}
+        fontSize={8}
         fontStyle="bold"
         align="center"
         verticalAlign="middle"
