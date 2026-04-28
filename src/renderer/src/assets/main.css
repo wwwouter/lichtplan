@@ -678,3 +678,26 @@ body {
   display: block;
   min-height: 16px;
 }
+
+.items-list-cell-selected {
+  background: #fef08a;
+  outline: 1px solid #eab308;
+  border-radius: 2px;
+  padding: 1px 3px;
+  margin: -2px;
+}
+
+.items-list-multi-hint {
+  font-size: 11px;
+  color: #3b82f6;
+  padding: 6px 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+th.items-list-sortable-header.multi-active {
+  background: #fef08a;
+  color: #854d0e;
+}

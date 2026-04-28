@@ -6,7 +6,8 @@ import { useUIStore } from '../stores/useUIStore'
 type SortDir = 'asc' | 'desc'
 interface SortEntry { key: string; dir: SortDir }
 
-interface EditingCell { id: string; field: string }
+function makeKey(id: string, field: string) { return `${id}|${field}` }
+function parseKey(key: string) { const [id, field] = key.split('|'); return { id, field } }
 
 export function ItemsListPopup() {
   const itemsListOpen = useUIStore((s) => s.itemsListOpen)
@@ -15,7 +16,9 @@ export function ItemsListPopup() {
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const [sorts, setSorts] = useState<SortEntry[]>([])
-  const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
+  const [multiEditField, setMultiEditField] = useState<string | null>(null)
+  const [editingKey, setEditingKey] = useState<string | null>(null)
 
   const floor = project.floors.find((f) => f.id === activeFloorId)
 
@@ -36,7 +39,6 @@ export function ItemsListPopup() {
         const def = getSymbolById(s.symbolId)
         return {
           id: s.id,
-          symbolId: s.symbolId,
           type: def?.name ?? s.symbolId,
           label: s.label ?? '',
           group: s.group ?? '',
@@ -106,19 +108,114 @@ export function ItemsListPopup() {
     }
   }
 
-  const handleCellSave = (symbolId: string, field: string, _originalValue: string, nextValue: string) => {
-    const trimmed = nextValue.trim()
-    if (field === 'itemId') {
-      if (isDuplicateItemId(symbolId, trimmed)) {
-        setEditingCell(null)
+  const clearSelection = useCallback(() => {
+    setSelectedKeys(new Set())
+    setMultiEditField(null)
+    setEditingKey(null)
+  }, [])
+
+  const handleCellClick = useCallback(
+    (e: React.MouseEvent, id: string, field: string) => {
+      const key = makeKey(id, field)
+
+      if (e.metaKey || e.ctrlKey) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        if (multiEditField && multiEditField !== field) {
+          // Different column — start fresh
+          setSelectedKeys(new Set([key]))
+          setMultiEditField(field)
+          setEditingKey(null)
+          return
+        }
+
+        setSelectedKeys((prev) => {
+          const next = new Set(prev)
+          if (next.has(key)) {
+            next.delete(key)
+            return next.size > 0 ? next : new Set()
+          }
+          next.add(key)
+          return next
+        })
+        setMultiEditField(field)
+        setEditingKey(null)
         return
       }
-      updateSymbol(activeFloorId, symbolId, { itemId: trimmed || undefined })
-    } else {
-      updateSymbol(activeFloorId, symbolId, { [field]: trimmed || undefined })
+
+      // Normal click — if the clicked cell is already selected, enter edit mode for the selection
+      if (selectedKeys.has(key) && selectedKeys.size > 0) {
+        setEditingKey(key)
+        return
+      }
+
+      // Otherwise, single-cell edit (no selection)
+      clearSelection()
+      setEditingKey(key)
+    },
+    [multiEditField, selectedKeys, clearSelection]
+  )
+
+  const handleSave = useCallback(
+    (key: string, nextValue: string) => {
+      const { id, field } = parseKey(key)
+      const trimmed = nextValue.trim()
+
+      if (selectedKeys.size > 1 && selectedKeys.has(key)) {
+        // Multi-edit: apply to all selected cells in the same column
+        selectedKeys.forEach((k) => {
+          const target = parseKey(k)
+          const val = k === key ? trimmed : trimmed  // same value for all
+          if (field === 'itemId') {
+            if (isDuplicateItemId(target.id, val)) return
+            updateSymbol(activeFloorId, target.id, { itemId: val || undefined })
+          } else {
+            updateSymbol(activeFloorId, target.id, { [field]: val || undefined })
+          }
+        })
+        clearSelection()
+        return
+      }
+
+      // Single-cell save
+      if (field === 'itemId') {
+        if (isDuplicateItemId(id, trimmed)) {
+          setEditingKey(null)
+          return
+        }
+        updateSymbol(activeFloorId, id, { itemId: trimmed || undefined })
+      } else {
+        updateSymbol(activeFloorId, id, { [field]: trimmed || undefined })
+      }
+      setEditingKey(null)
+    },
+    [selectedKeys, activeFloorId, updateSymbol, isDuplicateItemId, clearSelection]
+  )
+
+  // Handle Cmd+A / Ctrl+A to select all cells in the same column
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearSelection()
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
+        // Only intercept if the focus is inside the popup table and we're in an editing field
+        const active = document.activeElement
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+          // Allow native select-all inside input/textarea
+          return
+        }
+        e.preventDefault()
+        if (multiEditField) {
+          const all = sortedItems.map((i) => makeKey(i.id, multiEditField))
+          setSelectedKeys(new Set(all))
+        }
+      }
     }
-    setEditingCell(null)
-  }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [multiEditField, sortedItems, clearSelection])
 
   if (!itemsListOpen) return null
 
@@ -127,10 +224,11 @@ export function ItemsListPopup() {
     const isSorted = idx !== -1
     const dir = isSorted ? sorts[idx].dir : null
     const orderNum = isSorted && sorts.length > 1 ? idx + 1 : null
+    const isMulti = multiEditField === colKey
 
     return (
       <th
-        className={`items-list-sortable-header${isSorted ? ' sorted' : ''}`}
+        className={`items-list-sortable-header${isSorted ? ' sorted' : ''}${isMulti ? ' multi-active' : ''}`}
         onClick={() => toggleSort(colKey)}
         title="Sorteren"
       >
@@ -150,7 +248,9 @@ export function ItemsListPopup() {
     field: string
     multiline?: boolean
   }) {
-    const isEditing = editingCell?.id === item.id && editingCell?.field === field
+    const key = makeKey(item.id, field)
+    const isEditing = editingKey === key
+    const isSelected = selectedKeys.has(key)
     const value = item[field] ?? ''
     const inputRef = useRef<HTMLInputElement>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -166,6 +266,7 @@ export function ItemsListPopup() {
     }, [isEditing, multiline])
 
     if (isEditing) {
+      const multiHint = selectedKeys.size > 1 ? ` (${selectedKeys.size} items)` : ''
       if (multiline) {
         return (
           <textarea
@@ -173,16 +274,17 @@ export function ItemsListPopup() {
             className="items-list-cell-textarea"
             defaultValue={value}
             rows={2}
+            title={`Bewerken${multiHint}`}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault()
-                handleCellSave(item.id, field, value, e.currentTarget.value)
+                handleSave(key, e.currentTarget.value)
               }
               if (e.key === 'Escape') {
-                setEditingCell(null)
+                clearSelection()
               }
             }}
-            onBlur={(e) => handleCellSave(item.id, field, value, e.target.value)}
+            onBlur={(e) => handleSave(key, e.target.value)}
           />
         )
       }
@@ -193,22 +295,28 @@ export function ItemsListPopup() {
           type="text"
           defaultValue={value}
           maxLength={field === 'itemId' ? 3 : undefined}
+          title={`Bewerken${multiHint}`}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
-              handleCellSave(item.id, field, value, e.currentTarget.value)
+              handleSave(key, e.currentTarget.value)
             }
             if (e.key === 'Escape') {
-              setEditingCell(null)
+              clearSelection()
             }
           }}
-          onBlur={(e) => handleCellSave(item.id, field, value, e.target.value)}
+          onBlur={(e) => handleSave(key, e.target.value)}
         />
       )
     }
 
+    const cellClass = isSelected ? 'items-list-cell-selected' : ''
+
     if (multiline) {
       return (
-        <span onClick={() => setEditingCell({ id: item.id, field })}>
+        <span
+          className={cellClass}
+          onClick={(e) => handleCellClick(e, item.id, field)}
+        >
           {value.split('\n').map((line, idx, arr) => (
             <span key={idx}>
               {line}
@@ -219,13 +327,25 @@ export function ItemsListPopup() {
       )
     }
 
-    return <span onClick={() => setEditingCell({ id: item.id, field })}>{value}</span>
+    return (
+      <span
+        className={cellClass}
+        onClick={(e) => handleCellClick(e, item.id, field)}
+      >
+        {value}
+      </span>
+    )
   }
 
   return (
     <div className="dialog-overlay" onClick={() => setItemsListOpen(false)}>
       <div className="dialog items-list-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-title">Items op deze vloer ({sortedItems.length})</div>
+        {selectedKeys.size > 0 && (
+          <div className="items-list-multi-hint">
+            {selectedKeys.size} geselecteerd · Cmd-klik om meer te selecteren · Klik om te bewerken · Escape om te annuleren
+          </div>
+        )}
         <div className="items-list-table-wrapper">
           <table className="items-list-table">
             <thead>
