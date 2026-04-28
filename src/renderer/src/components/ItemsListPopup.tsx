@@ -19,6 +19,7 @@ export function ItemsListPopup() {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
   const [multiEditField, setMultiEditField] = useState<string | null>(null)
   const [editingKey, setEditingKey] = useState<string | null>(null)
+  const [lastClickedKey, setLastClickedKey] = useState<string | null>(null)
 
   const floor = project.floors.find((f) => f.id === activeFloorId)
 
@@ -112,11 +113,57 @@ export function ItemsListPopup() {
     setSelectedKeys(new Set())
     setMultiEditField(null)
     setEditingKey(null)
+    setLastClickedKey(null)
   }, [])
 
   const handleCellClick = useCallback(
     (e: React.MouseEvent, id: string, field: string) => {
       const key = makeKey(id, field)
+
+      if (e.shiftKey) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        if (multiEditField && field !== multiEditField) {
+          // Shift into a different column — start fresh with single
+          setSelectedKeys(new Set([key]))
+          setMultiEditField(field)
+          setEditingKey(null)
+          setLastClickedKey(key)
+          return
+        }
+
+        if (lastClickedKey) {
+          const anchor = parseKey(lastClickedKey)
+          const keysInColumn = sortedItems.map((i) => makeKey(i.id, field))
+          const startIdx = keysInColumn.indexOf(lastClickedKey)
+          const endIdx = keysInColumn.indexOf(key)
+
+          if (startIdx !== -1 && endIdx !== -1) {
+            const [from, to] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx]
+            const rangeKeys = keysInColumn.slice(from, to + 1)
+
+            setSelectedKeys((prev) => {
+              const next = new Set(prev)
+              if (anchor.field !== field) {
+                next.clear()
+              }
+              rangeKeys.forEach((k) => next.add(k))
+              return next
+            })
+            setMultiEditField(field)
+            setEditingKey(null)
+            return
+          }
+        }
+
+        // No last clicked key — start a new selection
+        setSelectedKeys(new Set([key]))
+        setMultiEditField(field)
+        setEditingKey(null)
+        setLastClickedKey(key)
+        return
+      }
 
       if (e.metaKey || e.ctrlKey) {
         e.preventDefault()
@@ -141,20 +188,23 @@ export function ItemsListPopup() {
         })
         setMultiEditField(field)
         setEditingKey(null)
+        setLastClickedKey(key)
         return
       }
 
       // Normal click — if the clicked cell is already selected, enter edit mode for the selection
       if (selectedKeys.has(key) && selectedKeys.size > 0) {
         setEditingKey(key)
+        setLastClickedKey(key)
         return
       }
 
       // Otherwise, single-cell edit (no selection)
       clearSelection()
       setEditingKey(key)
+      setLastClickedKey(key)
     },
-    [multiEditField, selectedKeys, clearSelection]
+    [multiEditField, selectedKeys, clearSelection, lastClickedKey, sortedItems]
   )
 
   const handleSave = useCallback(
@@ -343,7 +393,7 @@ export function ItemsListPopup() {
         <div className="dialog-title">Items op deze vloer ({sortedItems.length})</div>
         {selectedKeys.size > 0 && (
           <div className="items-list-multi-hint">
-            {selectedKeys.size} geselecteerd · Cmd-klik om meer te selecteren · Klik om te bewerken · Escape om te annuleren
+            {selectedKeys.size} geselecteerd · Cmd+klik voor losse selectie · Shift+klik voor bereik · Klik om te bewerken · Escape om te annuleren
           </div>
         )}
         <div className="items-list-table-wrapper">
