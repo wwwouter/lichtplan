@@ -92,7 +92,7 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
           {showGroup && symbol.group && (
             <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} definitionWidth={definition.width} />
           )}
-          {(showItemId || showLabel) && (symbol.itemId || symbol.label) && (
+          {((showItemId && symbol.itemId) || (showLabel && symbol.label)) && (
             <SymbolLabel
               text={
                 showItemId && symbol.itemId
