@@ -240,7 +240,7 @@ function SymbolLabel({
 }
 
 function GroupBadge({ group, offsetX, offsetY, definitionWidth }: { group: string; offsetX: number; offsetY: number; definitionWidth: number }) {
-  const radius = 8
+  const radius = 7
   // bottom-left at 12.5% of icon width
   const x = -offsetX + definitionWidth * 0.125
   const y = offsetY - radius
@@ -252,7 +252,7 @@ function GroupBadge({ group, offsetX, offsetY, definitionWidth }: { group: strin
       <Text
         text={display}
         fill="#000000"
-        fontSize={8}
+        fontSize={7}
         fontStyle="bold"
         align="center"
         verticalAlign="middle"

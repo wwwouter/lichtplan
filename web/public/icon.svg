@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lichtplan icon">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="40" x2="432" y2="472" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12343f" />
+      <stop offset="1" stop-color="#111827" />
+    </linearGradient>
+    <clipPath id="rounded">
+      <rect width="512" height="512" rx="92" />
+    </clipPath>
+    <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000000" flood-opacity="0.22" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="92" fill="url(#bg)" />
+
+  <g clip-path="url(#rounded)" opacity="0.34">
+    <path d="M64 144H448M64 256H448M64 368H448M144 64V448M256 64V448M368 64V448" stroke="#6ee7f9" stroke-width="3" />
+  </g>
+
+  <g filter="url(#soft-shadow)">
+    <path
+      d="M130 134H346V218H284V378H130V134Z"
+      fill="none"
+      stroke="#f8fafc"
+      stroke-width="24"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path d="M284 218L404 306C376 354 332 378 284 378Z" fill="#ffd166" opacity="0.28" />
+    <path d="M284 218L384 292" fill="none" stroke="#ffd166" stroke-width="18" stroke-linecap="round" />
+    <circle cx="284" cy="218" r="39" fill="#ffd166" />
+    <circle cx="284" cy="218" r="17" fill="#111827" />
+    <path
+      d="M340 250L376 276M322 292L352 332M284 306V350"
+      fill="none"
+      stroke="#ffd166"
+      stroke-width="15"
+      stroke-linecap="round"
+    />
+  </g>
+</svg>
