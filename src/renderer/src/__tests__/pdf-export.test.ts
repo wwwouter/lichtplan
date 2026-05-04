@@ -47,11 +47,25 @@ const { pdfInstances, jsPDFMock } = vi.hoisted(() => {
       this.texts.push({ args, color: this.textColor })
     }
 
-    setFontSize() {}
-    setFont() {}
-    setFillColor() {}
-    setDrawColor() {}
-    setLineWidth() {}
+    setFontSize(..._args: unknown[]) {
+      return this
+    }
+
+    setFont(..._args: unknown[]) {
+      return this
+    }
+
+    setFillColor(..._args: unknown[]) {
+      return this
+    }
+
+    setDrawColor(..._args: unknown[]) {
+      return this
+    }
+
+    setLineWidth(..._args: unknown[]) {
+      return this
+    }
     setTextColor(...args: unknown[]) {
       this.textColor = args
     }

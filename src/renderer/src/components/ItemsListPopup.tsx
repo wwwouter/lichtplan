@@ -284,7 +284,7 @@ export function ItemsListPopup() {
       >
         {label}
         {dir && (dir === 'asc' ? ' ↑' : ' ↓')}
-        {orderNum != null && <span className="sort-order">{orderNum}</span>}
+        {orderNum !== null && <span className="sort-order">{orderNum}</span>}
       </th>
     )
   }

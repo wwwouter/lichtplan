@@ -94,7 +94,6 @@ export function FloorCanvas({ stageRef }: Props) {
       const symbolId = e.dataTransfer.getData('symbolId')
       if (!symbolId || !stageRef.current) return
 
-      const stage = stageRef.current
       const container = containerRef.current
       if (!container) return
 

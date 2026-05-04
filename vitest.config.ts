@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    exclude: ['**/node_modules/**', '**/dist/**', '**/out/**', '**/.kilo/**', '**/.playwright-cli/**'],
     setupFiles: ['./src/renderer/src/__tests__/setup.ts']
   }
 })
