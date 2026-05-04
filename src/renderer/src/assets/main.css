@@ -9,19 +9,21 @@
   --sidebar-width: 220px;
   --toolbar-height: 42px;
   --tabs-height: 36px;
-  --bg-dark: #1E1E2E;
-  --bg-dark-hover: #2A2A3E;
-  --bg-surface: #F8FAFC;
-  --bg-white: #FFFFFF;
-  --border: #E2E8F0;
-  --text-primary: #1E293B;
-  --text-secondary: #64748B;
-  --text-light: #CBD5E1;
-  --accent: #3B82F6;
-  --danger: #EF4444;
+  --bg-dark: #1e1e2e;
+  --bg-dark-hover: #2a2a3e;
+  --bg-surface: #f8fafc;
+  --bg-white: #ffffff;
+  --border: #e2e8f0;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-light: #cbd5e1;
+  --accent: #3b82f6;
+  --danger: #ef4444;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   width: 100%;
   overflow: hidden;
@@ -90,12 +92,12 @@ body {
 }
 
 .toolbar button:hover {
-  background: #F1F5F9;
+  background: #f1f5f9;
   border-color: var(--border);
 }
 
 .toolbar button.active {
-  background: #DBEAFE;
+  background: #dbeafe;
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -122,7 +124,7 @@ body {
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
   background: var(--bg-dark);
-  border-right: 1px solid #2A2A3E;
+  border-right: 1px solid #2a2a3e;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -136,8 +138,8 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-light);
-  border-bottom: 1px solid #2A2A3E;
-  border-top: 1px solid #2A2A3E;
+  border-bottom: 1px solid #2a2a3e;
+  border-top: 1px solid #2a2a3e;
 }
 
 /* Symbol visibility toggles */
@@ -146,7 +148,7 @@ body {
   align-items: center;
   padding: 6px 8px;
   gap: 4px;
-  border-bottom: 1px solid #2A2A3E;
+  border-bottom: 1px solid #2a2a3e;
 }
 
 .visibility-toggle {
@@ -156,31 +158,34 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   cursor: pointer;
-  border: 1px solid #3B3B4F;
+  border: 1px solid #3b3b4f;
   border-radius: 3px;
-  background: #1E1E2D;
+  background: #1e1e2d;
   color: #94a3b8;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
   user-select: none;
   text-align: center;
 }
 
 .visibility-toggle:hover {
-  background: #2A2A3E;
+  background: #2a2a3e;
 }
 
 .visibility-toggle.active {
-  background: #3B82F6;
+  background: #3b82f6;
   color: #ffffff;
-  border-color: #3B82F6;
+  border-color: #3b82f6;
 }
 
 .symbol-category {
-  border-bottom: 1px solid #2A2A3E;
+  border-bottom: 1px solid #2a2a3e;
 }
 
 .symbol-category {
-  border-bottom: 1px solid #2A2A3E;
+  border-bottom: 1px solid #2a2a3e;
 }
 
 .category-header {
@@ -191,7 +196,7 @@ body {
   background: transparent;
   border: none;
   border-left: 3px solid transparent;
-  color: #E2E8F0;
+  color: #e2e8f0;
   font-size: 12px;
   cursor: pointer;
   gap: 6px;
@@ -231,7 +236,7 @@ body {
   padding: 4px 12px 4px 24px;
   gap: 8px;
   cursor: grab;
-  color: #CBD5E1;
+  color: #cbd5e1;
   font-size: 11px;
 }
 
@@ -296,7 +301,11 @@ body {
     linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
     linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
   background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0px;
 }
 
 /* === Floor Tabs === */
@@ -334,7 +343,7 @@ body {
 }
 
 .floor-tab:hover {
-  background: #F1F5F9;
+  background: #f1f5f9;
 }
 
 .floor-tab.active {
@@ -386,7 +395,7 @@ body {
 }
 
 .floor-tab-add:hover {
-  background: #F1F5F9;
+  background: #f1f5f9;
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -423,7 +432,7 @@ body {
 }
 
 .context-menu-item:hover {
-  background: #F1F5F9;
+  background: #f1f5f9;
 }
 
 .context-menu-item.danger {
@@ -431,7 +440,7 @@ body {
 }
 
 .context-menu-item.danger:hover {
-  background: #FEF2F2;
+  background: #fef2f2;
 }
 
 .context-menu-separator {
@@ -450,7 +459,7 @@ body {
 }
 
 .sidebar::-webkit-scrollbar-thumb {
-  background: #4A5568;
+  background: #4a5568;
   border-radius: 3px;
 }
 
@@ -518,7 +527,7 @@ body {
 }
 
 .dialog-btn:hover {
-  background: #F1F5F9;
+  background: #f1f5f9;
 }
 
 .dialog-btn.primary {
@@ -528,7 +537,94 @@ body {
 }
 
 .dialog-btn.primary:hover {
-  background: #2563EB;
+  background: #2563eb;
+}
+
+.dialog-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.pdf-export-dialog {
+  min-width: 360px;
+  max-width: 460px;
+}
+
+.pdf-export-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdf-export-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pdf-export-inline-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.pdf-export-inline-actions button {
+  border: 1px solid var(--border);
+  background: var(--bg-white);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.pdf-export-inline-actions button:hover {
+  background: #f1f5f9;
+  color: var(--text-primary);
+}
+
+.pdf-floor-list {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.pdf-floor-row,
+.pdf-option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.pdf-floor-row {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pdf-floor-row:last-child {
+  border-bottom: none;
+}
+
+.pdf-floor-row:hover {
+  background: #f8fafc;
+}
+
+.pdf-floor-row input,
+.pdf-option-row input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+.pdf-option-row {
+  margin-top: 12px;
 }
 
 /* === Loading Overlay === */
@@ -554,7 +650,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-message {
@@ -645,7 +743,7 @@ body {
 .items-list-cell-input {
   width: 100%;
   padding: 4px 6px;
-  border: 1px solid #3B82F6;
+  border: 1px solid #3b82f6;
   border-radius: 3px;
   font-size: 12px;
   font-family: inherit;
@@ -658,7 +756,7 @@ body {
 .items-list-cell-textarea {
   width: 100%;
   padding: 4px 6px;
-  border: 1px solid #3B82F6;
+  border: 1px solid #3b82f6;
   border-radius: 3px;
   font-size: 12px;
   font-family: inherit;

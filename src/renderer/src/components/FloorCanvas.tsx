@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState } from 'react'
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react'
 import { Stage, Layer, Line, Circle, Text, Rect } from 'react-konva'
 import Konva from 'konva'
 import { v4 as uuidv4 } from 'uuid'
@@ -8,6 +8,7 @@ import { useUIStore } from '../stores/useUIStore'
 import { getSymbolById } from '../symbols'
 import { FloorPlanImageLayer } from './FloorPlanImage'
 import { SymbolNode } from './SymbolNode'
+import { computeSmartLabelLayout, type LabelLayoutItem } from './labelLayout'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -17,9 +18,7 @@ export function FloorCanvas({ stageRef }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 800, height: 600 })
 
-  const floor = useProjectStore((s) =>
-    s.project.floors.find((f) => f.id === s.activeFloorId)
-  )
+  const floor = useProjectStore((s) => s.project.floors.find((f) => f.id === s.activeFloorId))
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const addSymbol = useProjectStore((s) => s.addSymbol)
 
@@ -28,6 +27,8 @@ export function FloorCanvas({ stageRef }: Props) {
   const setContextMenu = useUIStore((s) => s.setContextMenu)
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
   const hiddenSymbolIds = useUIStore((s) => s.hiddenSymbolIds)
+  const showItemId = useUIStore((s) => s.showItemId)
+  const showLabel = useUIStore((s) => s.showLabel)
   const interactionMode = useUIStore((s) => s.interactionMode)
   const setInteractionMode = useUIStore((s) => s.setInteractionMode)
   const setCalibrationPixels = useUIStore((s) => s.setCalibrationPixels)
@@ -176,7 +177,15 @@ export function FloorCanvas({ stageRef }: Props) {
         setContextMenu(null)
       }
     },
-    [interactionMode, measureStart, getCanvasPoint, setCalibrationPixels, floor, setSelectedSymbol, setContextMenu]
+    [
+      interactionMode,
+      measureStart,
+      getCanvasPoint,
+      setCalibrationPixels,
+      floor,
+      setSelectedSymbol,
+      setContextMenu
+    ]
   )
 
   const handleStageDragEnd = useCallback(
@@ -201,6 +210,31 @@ export function FloorCanvas({ stageRef }: Props) {
 
   const cursorStyle =
     interactionMode === 'calibrate' || interactionMode === 'measure' ? 'crosshair' : undefined
+
+  const smartLabelLayout = useMemo(() => {
+    if (!floor) return new Map<string, { offsetX: number; offsetY: number; moved: boolean }>()
+
+    const layoutItems: LabelLayoutItem[] = floor.symbols.flatMap((sym) => {
+      if (hiddenSymbolIds.has(sym.symbolId)) return []
+      const def = getSymbolById(sym.symbolId)
+      if (!def) return []
+      return [
+        {
+          id: sym.id,
+          symbolId: sym.symbolId,
+          x: sym.x,
+          y: sym.y,
+          width: def.width,
+          height: def.height,
+          itemId: sym.itemId,
+          label: sym.label,
+          category: def.category
+        }
+      ]
+    })
+
+    return computeSmartLabelLayout(layoutItems, showItemId, showLabel)
+  }, [floor, hiddenSymbolIds, showItemId, showLabel])
 
   return (
     <div
@@ -238,6 +272,7 @@ export function FloorCanvas({ stageRef }: Props) {
                 definition={def}
                 floorId={activeFloorId}
                 isSelected={selectedSymbolId === sym.id}
+                labelLayout={smartLabelLayout.get(sym.id)}
               />
             )
           })}
@@ -249,13 +284,28 @@ export function FloorCanvas({ stageRef }: Props) {
           {measureResult && (
             <>
               <Line
-                points={[measureResult.start.x, measureResult.start.y, measureResult.end.x, measureResult.end.y]}
+                points={[
+                  measureResult.start.x,
+                  measureResult.start.y,
+                  measureResult.end.x,
+                  measureResult.end.y
+                ]}
                 stroke="#EF4444"
                 strokeWidth={2 / scale}
                 dash={[6 / scale, 4 / scale]}
               />
-              <Circle x={measureResult.start.x} y={measureResult.start.y} radius={4 / scale} fill="#EF4444" />
-              <Circle x={measureResult.end.x} y={measureResult.end.y} radius={4 / scale} fill="#EF4444" />
+              <Circle
+                x={measureResult.start.x}
+                y={measureResult.start.y}
+                radius={4 / scale}
+                fill="#EF4444"
+              />
+              <Circle
+                x={measureResult.end.x}
+                y={measureResult.end.y}
+                radius={4 / scale}
+                fill="#EF4444"
+              />
               {(() => {
                 const midX = (measureResult.start.x + measureResult.end.x) / 2
                 const midY = (measureResult.start.y + measureResult.end.y) / 2
@@ -264,8 +314,25 @@ export function FloorCanvas({ stageRef }: Props) {
                 const fs = 14 / scale
                 return (
                   <>
-                    <Rect x={midX} y={midY - fs - 4 / scale} width={label.length * fs * 0.65} height={fs + 6 / scale} fill="#ffffff" stroke="#EF4444" strokeWidth={1 / scale} cornerRadius={3 / scale} />
-                    <Text x={midX + 4 / scale} y={midY - fs - 1 / scale} text={label} fontSize={fs} fill="#EF4444" fontStyle="bold" listening={false} />
+                    <Rect
+                      x={midX}
+                      y={midY - fs - 4 / scale}
+                      width={label.length * fs * 0.65}
+                      height={fs + 6 / scale}
+                      fill="#ffffff"
+                      stroke="#EF4444"
+                      strokeWidth={1 / scale}
+                      cornerRadius={3 / scale}
+                    />
+                    <Text
+                      x={midX + 4 / scale}
+                      y={midY - fs - 1 / scale}
+                      text={label}
+                      fontSize={fs}
+                      fill="#EF4444"
+                      fontStyle="bold"
+                      listening={false}
+                    />
                   </>
                 )
               })()}

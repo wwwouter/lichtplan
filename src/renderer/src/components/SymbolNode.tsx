@@ -1,5 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useState } from 'react'
-import { Group, Text, Rect, Circle } from 'react-konva'
+import { Group, Text, Rect, Circle, Line } from 'react-konva'
 import Konva from 'konva'
 import { PlacedSymbol } from '../types/project'
 import { SymbolDefinition, CATEGORY_COLORS } from '../symbols'
@@ -13,9 +13,10 @@ interface Props {
   definition: SymbolDefinition
   floorId: string
   isSelected: boolean
+  labelLayout?: { offsetX: number; offsetY: number; moved: boolean }
 }
 
-export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
+export function SymbolNode({ symbol, definition, floorId, isSelected, labelLayout }: Props) {
   const groupRef = useRef<Konva.Group>(null)
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const setSelectedSymbol = useCanvasStore((s) => s.setSelectedSymbol)
@@ -68,11 +69,7 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
       }}
     >
       {definition.id === 'tekst' ? (
-        <TextSymbol
-          rotation={symbol.rotation}
-          text={symbol.label}
-          isSelected={isSelected}
-        />
+        <TextSymbol rotation={symbol.rotation} text={symbol.label} isSelected={isSelected} />
       ) : (
         <>
           <Group rotation={symbol.rotation}>
@@ -84,13 +81,28 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
               height={definition.height}
               fill="transparent"
             />
-            <SymbolRenderer shapes={definition.shapes} color={color} offsetX={offsetX} offsetY={offsetY} />
+            <SymbolRenderer
+              shapes={definition.shapes}
+              color={color}
+              offsetX={offsetX}
+              offsetY={offsetY}
+            />
             {isSelected && (
-              <SelectionOutline width={definition.width} height={definition.height} offsetX={offsetX} offsetY={offsetY} />
+              <SelectionOutline
+                width={definition.width}
+                height={definition.height}
+                offsetX={offsetX}
+                offsetY={offsetY}
+              />
             )}
           </Group>
           {showGroup && symbol.group && (
-            <GroupBadge group={symbol.group} offsetX={offsetX} offsetY={offsetY} definitionWidth={definition.width} />
+            <GroupBadge
+              group={symbol.group}
+              offsetX={offsetX}
+              offsetY={offsetY}
+              definitionWidth={definition.width}
+            />
           )}
           {((showItemId && symbol.itemId) || (showLabel && symbol.label)) && (
             <SymbolLabel
@@ -99,10 +111,12 @@ export function SymbolNode({ symbol, definition, floorId, isSelected }: Props) {
                   ? showLabel && symbol.label
                     ? `[${symbol.itemId}]\n${symbol.label}`
                     : `[${symbol.itemId}]`
-                  : symbol.label ?? ''
+                  : (symbol.label ?? '')
               }
               y={offsetY + 4}
               minWidth={definition.width}
+              offset={labelLayout}
+              leaderFrom={getLeaderStart(labelLayout, offsetX, offsetY)}
             />
           )}
         </>
@@ -179,11 +193,15 @@ function TextSymbol({
 function SymbolLabel({
   text,
   y,
-  minWidth
+  minWidth,
+  offset,
+  leaderFrom
 }: {
   text: string
   y: number
   minWidth: number
+  offset?: { offsetX: number; offsetY: number; moved: boolean }
+  leaderFrom?: { x: number; y: number }
 }) {
   const fontSize = 11
   const lineHeight = 1
@@ -207,13 +225,41 @@ function SymbolLabel({
   const maxLineWidth = lines.reduce((m, l) => (l.width > m ? l.width : m), 0)
   const boxWidth = Math.max(maxLineWidth, 1) + padX * 2
   const boxHeight = Math.max(lines.length, 1) * fontSize * lineHeight + padY * 2
+  const offsetX = offset?.offsetX ?? 0
+  const offsetY = offset?.offsetY ?? 0
+  const labelY = y + offsetY
+  const boxLeft = offsetX - boxWidth / 2
+  const boxTop = labelY - padY
+  const labelCenterY = boxTop + boxHeight / 2
+  const leaderTarget = getLeaderTarget(
+    leaderFrom,
+    { x: offsetX, y: labelCenterY },
+    boxLeft,
+    boxTop,
+    boxWidth,
+    boxHeight
+  )
+  const leaderLength =
+    leaderFrom && leaderTarget
+      ? Math.sqrt((leaderTarget.x - leaderFrom.x) ** 2 + (leaderTarget.y - leaderFrom.y) ** 2)
+      : 0
+  const showLeader = offset?.moved && leaderFrom && leaderTarget && leaderLength <= 36
 
   return (
     <>
+      {showLeader && (
+        <Line
+          points={[leaderFrom.x, leaderFrom.y, leaderTarget.x, leaderTarget.y]}
+          stroke="#111827"
+          strokeWidth={1}
+          opacity={0.38}
+          listening={false}
+        />
+      )}
       {lines.length > 0 && (
         <Rect
-          x={-boxWidth / 2}
-          y={y - padY}
+          x={boxLeft}
+          y={boxTop}
           width={boxWidth}
           height={boxHeight}
           fill="#ffffff"
@@ -224,8 +270,8 @@ function SymbolLabel({
       )}
       <Text
         ref={textRef}
-        x={-labelWidth / 2}
-        y={y}
+        x={offsetX - labelWidth / 2}
+        y={labelY}
         text={text}
         fontSize={fontSize}
         lineHeight={lineHeight}
@@ -239,7 +285,67 @@ function SymbolLabel({
   )
 }
 
-function GroupBadge({ group, offsetX, offsetY, definitionWidth }: { group: string; offsetX: number; offsetY: number; definitionWidth: number }) {
+function getLeaderStart(
+  offset: { offsetX: number; offsetY: number; moved: boolean } | undefined,
+  offsetX: number,
+  offsetY: number
+): { x: number; y: number } | undefined {
+  if (!offset?.moved) return undefined
+  const absX = Math.abs(offset.offsetX)
+  const absY = Math.abs(offset.offsetY)
+
+  if (absX > absY) {
+    return {
+      x: offset.offsetX > 0 ? offsetX + 2 : -offsetX - 2,
+      y: 0
+    }
+  }
+
+  return {
+    x: 0,
+    y: offset.offsetY < 0 ? -offsetY - 2 : offsetY + 2
+  }
+}
+
+function getLeaderTarget(
+  leaderFrom: { x: number; y: number } | undefined,
+  labelCenter: { x: number; y: number },
+  boxLeft: number,
+  boxTop: number,
+  boxWidth: number,
+  boxHeight: number
+): { x: number; y: number } | undefined {
+  if (!leaderFrom) return undefined
+
+  const dx = labelCenter.x - leaderFrom.x
+  const dy = labelCenter.y - leaderFrom.y
+  const halfWidth = boxWidth / 2
+  const halfHeight = boxHeight / 2
+
+  if (Math.abs(dx / halfWidth) > Math.abs(dy / halfHeight)) {
+    return {
+      x: dx > 0 ? boxLeft : boxLeft + boxWidth,
+      y: Math.min(boxTop + boxHeight, Math.max(boxTop, leaderFrom.y))
+    }
+  }
+
+  return {
+    x: Math.min(boxLeft + boxWidth, Math.max(boxLeft, leaderFrom.x)),
+    y: dy > 0 ? boxTop : boxTop + boxHeight
+  }
+}
+
+function GroupBadge({
+  group,
+  offsetX,
+  offsetY,
+  definitionWidth
+}: {
+  group: string
+  offsetX: number
+  offsetY: number
+  definitionWidth: number
+}) {
   const radius = 7
   // bottom-left at 12.5% of icon width
   const x = -offsetX + definitionWidth * 0.125

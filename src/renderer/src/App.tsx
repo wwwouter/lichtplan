@@ -16,7 +16,8 @@ import { DescriptionDialog } from './components/DescriptionDialog'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useFileOperations } from './hooks/useFileOperations'
 import { useProjectStore } from './stores/useProjectStore'
-import { exportStageToPNG, exportFloorToPDF } from './services/exportService'
+import { useUIStore } from './stores/useUIStore'
+import { exportStageToPNG } from './services/exportService'
 
 function App(): JSX.Element {
   const stageRef = useRef<Konva.Stage | null>(null)
@@ -24,6 +25,7 @@ function App(): JSX.Element {
   const project = useProjectStore((s) => s.project)
   const isDirty = useProjectStore((s) => s.isDirty)
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
+  const setPdfExportDialogOpen = useUIStore((s) => s.setPdfExportDialogOpen)
 
   useKeyboardShortcuts(handleSave)
 
@@ -57,16 +59,20 @@ function App(): JSX.Element {
           }
           break
         case 'menu:export-pdf':
-          if (stageRef.current) {
-            const floor = project.floors.find((f) => f.id === activeFloorId)
-            const pdfData = exportFloorToPDF(stageRef.current, project, floor?.name ?? 'export')
-            await window.api.exportPDF(pdfData, `${project.name} - ${floor?.name ?? 'export'}.pdf`)
-          }
+          setPdfExportDialogOpen(true)
           break
       }
     })
     return cleanup
-  }, [handleNew, handleOpen, handleSave, handleLoadImage, project, activeFloorId])
+  }, [
+    handleNew,
+    handleOpen,
+    handleSave,
+    handleLoadImage,
+    project,
+    activeFloorId,
+    setPdfExportDialogOpen
+  ])
 
   return (
     <div className="app">

@@ -37,6 +37,7 @@ interface UIState {
   idDialog: IdDialogState | null
   descriptionDialog: DescriptionDialogState | null
   itemsListOpen: boolean
+  pdfExportDialogOpen: boolean
   expandedCategories: Record<string, boolean>
   hiddenSymbolIds: Set<string>
   showItemId: boolean
@@ -54,6 +55,7 @@ interface UIState {
   setIdDialog: (dialog: IdDialogState | null) => void
   setDescriptionDialog: (dialog: DescriptionDialogState | null) => void
   setItemsListOpen: (open: boolean) => void
+  setPdfExportDialogOpen: (open: boolean) => void
   toggleCategory: (category: string) => void
   toggleSymbolVisibility: (symbolId: string) => void
   setLoading: (message: string | null) => void
@@ -75,6 +77,7 @@ export const useUIStore = create<UIState>((set) => ({
   idDialog: null,
   descriptionDialog: null,
   itemsListOpen: false,
+  pdfExportDialogOpen: false,
   expandedCategories: {
     Verlichting: true,
     Elektra: true,
@@ -104,6 +107,8 @@ export const useUIStore = create<UIState>((set) => ({
   setDescriptionDialog: (dialog) => set({ descriptionDialog: dialog }),
 
   setItemsListOpen: (open) => set({ itemsListOpen: open }),
+
+  setPdfExportDialogOpen: (open) => set({ pdfExportDialogOpen: open }),
 
   toggleCategory: (category) =>
     set((state) => ({
