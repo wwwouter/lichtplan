@@ -8,6 +8,7 @@ import { useUIStore } from '../stores/useUIStore'
 import { getSymbolById } from '../symbols'
 import { FloorPlanImageLayer } from './FloorPlanImage'
 import { SymbolNode } from './SymbolNode'
+import { SymbolInfoTooltip } from './SymbolInfoTooltip'
 import { computeSmartLabelLayout, type LabelLayoutItem } from './labelLayout'
 
 interface Props {
@@ -39,6 +40,7 @@ export function FloorCanvas({ stageRef }: Props) {
     end: { x: number; y: number }
     mm: number
   } | null>(null)
+  const [hoveredSymbolId, setHoveredSymbolId] = useState<string | null>(null)
 
   // Resize observer
   useEffect(() => {
@@ -235,6 +237,15 @@ export function FloorCanvas({ stageRef }: Props) {
     return computeSmartLabelLayout(layoutItems, showItemId, showLabel)
   }, [floor, hiddenSymbolIds, showItemId, showLabel])
 
+  const hoveredSymbol = useMemo(() => {
+    if (!floor || !hoveredSymbolId) return null
+    const symbol = floor.symbols.find((sym) => sym.id === hoveredSymbolId)
+    if (!symbol || hiddenSymbolIds.has(symbol.symbolId)) return null
+    const definition = getSymbolById(symbol.symbolId)
+    if (!definition) return null
+    return { symbol, definition }
+  }, [floor, hoveredSymbolId, hiddenSymbolIds])
+
   return (
     <div
       ref={containerRef}
@@ -272,6 +283,7 @@ export function FloorCanvas({ stageRef }: Props) {
                 floorId={activeFloorId}
                 isSelected={selectedSymbolId === sym.id}
                 labelLayout={smartLabelLayout.get(sym.id)}
+                onHoverChange={setHoveredSymbolId}
               />
             )
           })}
@@ -336,6 +348,14 @@ export function FloorCanvas({ stageRef }: Props) {
                 )
               })()}
             </>
+          )}
+        </Layer>
+        <Layer listening={false}>
+          {hoveredSymbol && (
+            <SymbolInfoTooltip
+              symbol={hoveredSymbol.symbol}
+              definition={hoveredSymbol.definition}
+            />
           )}
         </Layer>
       </Stage>

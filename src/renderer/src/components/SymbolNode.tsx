@@ -7,7 +7,6 @@ import { SymbolRenderer } from './SymbolRenderer'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import { useUIStore } from '../stores/useUIStore'
-import { formatSymbolTooltipText } from './symbolTooltip'
 
 interface Props {
   symbol: PlacedSymbol
@@ -15,9 +14,17 @@ interface Props {
   floorId: string
   isSelected: boolean
   labelLayout?: { offsetX: number; offsetY: number; moved: boolean }
+  onHoverChange?: (symbolId: string | null) => void
 }
 
-export function SymbolNode({ symbol, definition, floorId, isSelected, labelLayout }: Props) {
+export function SymbolNode({
+  symbol,
+  definition,
+  floorId,
+  isSelected,
+  labelLayout,
+  onHoverChange
+}: Props) {
   const groupRef = useRef<Konva.Group>(null)
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const setSelectedSymbol = useCanvasStore((s) => s.setSelectedSymbol)
@@ -25,7 +32,6 @@ export function SymbolNode({ symbol, definition, floorId, isSelected, labelLayou
   const showItemId = useUIStore((s) => s.showItemId)
   const showGroup = useUIStore((s) => s.showGroup)
   const showLabel = useUIStore((s) => s.showLabel)
-  const [isHovered, setIsHovered] = useState(false)
 
   const color = CATEGORY_COLORS[definition.category]
   const offsetX = definition.width / 2
@@ -51,9 +57,9 @@ export function SymbolNode({ symbol, definition, floorId, isSelected, labelLayou
         e.cancelBubble = true
         setSelectedSymbol(symbol.id)
       }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onDragStart={() => setIsHovered(false)}
+      onMouseEnter={() => onHoverChange?.(symbol.id)}
+      onMouseLeave={() => onHoverChange?.(null)}
+      onDragStart={() => onHoverChange?.(null)}
       onDragEnd={(e) => {
         updateSymbol(floorId, symbol.id, {
           x: e.target.x(),
@@ -126,73 +132,6 @@ export function SymbolNode({ symbol, definition, floorId, isSelected, labelLayou
           )}
         </>
       )}
-      {isHovered && <SymbolInfoTooltip symbol={symbol} offsetX={offsetX} offsetY={offsetY} />}
-    </Group>
-  )
-}
-
-function SymbolInfoTooltip({
-  symbol,
-  offsetX,
-  offsetY
-}: {
-  symbol: PlacedSymbol
-  offsetX: number
-  offsetY: number
-}) {
-  const text = formatSymbolTooltipText(symbol)
-  const textRef = useRef<Konva.Text>(null)
-  const [textHeight, setTextHeight] = useState(30)
-
-  useLayoutEffect(() => {
-    const node = textRef.current
-    if (!node) {
-      return
-    }
-    setTextHeight(node.height())
-  }, [text])
-
-  if (!text) {
-    return null
-  }
-
-  const fontSize = 11
-  const lineHeight = 1.25
-  const width = 170
-  const padX = 7
-  const padY = 5
-  const boxWidth = width + padX * 2
-  const boxHeight = textHeight + padY * 2
-  const x = offsetX + 8
-  const y = -offsetY - boxHeight - 8
-
-  return (
-    <Group x={x} y={y} listening={false}>
-      <Rect
-        width={boxWidth}
-        height={boxHeight}
-        fill="#ffffff"
-        stroke="#111827"
-        strokeWidth={1}
-        cornerRadius={3}
-        shadowColor="#111827"
-        shadowOpacity={0.16}
-        shadowBlur={4}
-        shadowOffset={{ x: 0, y: 2 }}
-        listening={false}
-      />
-      <Text
-        ref={textRef}
-        x={padX}
-        y={padY}
-        text={text}
-        width={width}
-        fontSize={fontSize}
-        lineHeight={lineHeight}
-        fill="#111827"
-        wrap="word"
-        listening={false}
-      />
     </Group>
   )
 }
