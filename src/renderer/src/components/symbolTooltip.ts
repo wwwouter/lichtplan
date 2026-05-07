@@ -8,8 +8,8 @@ export interface SymbolTooltipRow {
 export function getSymbolTooltipRows(
   symbol: Pick<PlacedSymbol, 'location' | 'description'>
 ): SymbolTooltipRow[] {
-  const location = symbol.location?.trim()
-  const description = symbol.description?.trim()
+  const location = normalizeTooltipValue(symbol.location)
+  const description = normalizeTooltipValue(symbol.description)
 
   if (!location && !description) {
     return []
@@ -29,5 +29,18 @@ export function formatSymbolTooltipText(
     return null
   }
 
-  return rows.map((row) => `${row.label}: ${row.value}`).join('\n')
+  return rows.map(formatSymbolTooltipRow).join('\n')
+}
+
+function normalizeTooltipValue(value: string | undefined): string | undefined {
+  const normalized = value?.replace(/\r\n?/g, '\n').trim()
+  return normalized && normalized.length > 0 ? normalized : undefined
+}
+
+function formatSymbolTooltipRow(row: SymbolTooltipRow): string {
+  if (row.value.includes('\n')) {
+    return `${row.label}:\n${row.value}`
+  }
+
+  return `${row.label}: ${row.value}`
 }

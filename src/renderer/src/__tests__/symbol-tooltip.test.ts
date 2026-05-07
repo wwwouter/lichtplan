@@ -18,6 +18,15 @@ describe('symbol tooltip details', () => {
     ).toBe('Locatie: Naast deur\nOmschrijving: Dimmer voor spots')
   })
 
+  it('places multiline values under their field label', () => {
+    expect(
+      formatSymbolTooltipText({
+        location: 'Keuken\r\nOnder bovenkast',
+        description: 'Stopcontact'
+      })
+    ).toBe('Locatie:\nKeuken\nOnder bovenkast\nOmschrijving: Stopcontact')
+  })
+
   it('does not show a tooltip for symbols without details', () => {
     expect(formatSymbolTooltipText({})).toBeNull()
   })
