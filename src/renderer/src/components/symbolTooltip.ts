@@ -6,19 +6,21 @@ export interface SymbolTooltipRow {
 }
 
 export function getSymbolTooltipRows(
-  symbol: Pick<PlacedSymbol, 'location' | 'description'>
+  symbol: Pick<PlacedSymbol, 'location' | 'description' | 'question'>
 ): SymbolTooltipRow[] {
   const location = normalizeTooltipValue(symbol.location)
   const description = normalizeTooltipValue(symbol.description)
+  const question = normalizeTooltipValue(symbol.question)
 
   return [
     location ? { label: 'Locatie', value: location } : null,
-    description ? { label: 'Omschrijving', value: description } : null
+    description ? { label: 'Omschrijving', value: description } : null,
+    question ? { label: 'Vraag', value: question } : null
   ].filter((row): row is SymbolTooltipRow => row !== null)
 }
 
 export function formatSymbolTooltipText(
-  symbol: Pick<PlacedSymbol, 'location' | 'description'>
+  symbol: Pick<PlacedSymbol, 'location' | 'description' | 'question'>
 ): string | null {
   const rows = getSymbolTooltipRows(symbol)
   if (rows.length === 0) {

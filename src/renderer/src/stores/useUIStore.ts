@@ -21,6 +21,11 @@ interface DescriptionDialogState {
   currentDescription: string
 }
 
+interface QuestionDialogState {
+  symbolId: string
+  currentQuestion: string
+}
+
 interface IdDialogState {
   symbolId: string
   currentId: string
@@ -36,6 +41,7 @@ interface UIState {
   locationDialog: LocationDialogState | null
   idDialog: IdDialogState | null
   descriptionDialog: DescriptionDialogState | null
+  questionDialog: QuestionDialogState | null
   itemsListOpen: boolean
   pdfExportDialogOpen: boolean
   expandedCategories: Record<string, boolean>
@@ -54,6 +60,7 @@ interface UIState {
   setLocationDialog: (dialog: LocationDialogState | null) => void
   setIdDialog: (dialog: IdDialogState | null) => void
   setDescriptionDialog: (dialog: DescriptionDialogState | null) => void
+  setQuestionDialog: (dialog: QuestionDialogState | null) => void
   setItemsListOpen: (open: boolean) => void
   setPdfExportDialogOpen: (open: boolean) => void
   toggleCategory: (category: string) => void
@@ -76,6 +83,7 @@ export const useUIStore = create<UIState>((set) => ({
   locationDialog: null,
   idDialog: null,
   descriptionDialog: null,
+  questionDialog: null,
   itemsListOpen: false,
   pdfExportDialogOpen: false,
   expandedCategories: {
@@ -105,6 +113,8 @@ export const useUIStore = create<UIState>((set) => ({
   setIdDialog: (dialog) => set({ idDialog: dialog }),
 
   setDescriptionDialog: (dialog) => set({ descriptionDialog: dialog }),
+
+  setQuestionDialog: (dialog) => set({ questionDialog: dialog }),
 
   setItemsListOpen: (open) => set({ itemsListOpen: open }),
 

@@ -9,6 +9,7 @@ import { getSymbolById } from '../symbols'
 import { FloorPlanImageLayer } from './FloorPlanImage'
 import { SymbolNode } from './SymbolNode'
 import { SymbolInfoTooltip } from './SymbolInfoTooltip'
+import { SymbolQuestionMarker } from './SymbolQuestionMarker'
 import { computeSmartLabelLayout, type LabelLayoutItem } from './labelLayout'
 
 interface Props {
@@ -351,6 +352,10 @@ export function FloorCanvas({ stageRef }: Props) {
           )}
         </Layer>
         <Layer listening={false}>
+          {floor.symbols.map((sym) => {
+            if (!sym.question?.trim() || hiddenSymbolIds.has(sym.symbolId)) return null
+            return <SymbolQuestionMarker key={sym.id} symbol={sym} />
+          })}
           {hoveredSymbol && (
             <SymbolInfoTooltip
               symbol={hoveredSymbol.symbol}

@@ -10,15 +10,20 @@ describe('symbol tooltip details', () => {
     expect(getSymbolTooltipRows({ location: '', description: 'Dimmer voor spots' })).toEqual([
       { label: 'Omschrijving', value: 'Dimmer voor spots' }
     ])
+
+    expect(getSymbolTooltipRows({ question: 'Klopt deze plek?' })).toEqual([
+      { label: 'Vraag', value: 'Klopt deze plek?' }
+    ])
   })
 
   it('formats location and description for hover display', () => {
     expect(
       formatSymbolTooltipText({
         location: 'Naast deur',
-        description: 'Dimmer voor spots'
+        description: 'Dimmer voor spots',
+        question: 'Zelfde groep als keuken?'
       })
-    ).toBe('Locatie: Naast deur\nOmschrijving: Dimmer voor spots')
+    ).toBe('Locatie: Naast deur\nOmschrijving: Dimmer voor spots\nVraag: Zelfde groep als keuken?')
   })
 
   it('places multiline values under their field label', () => {

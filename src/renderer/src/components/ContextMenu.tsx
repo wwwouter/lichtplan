@@ -19,6 +19,7 @@ export function ContextMenu() {
   const setLocationDialog = useUIStore((s) => s.setLocationDialog)
   const setIdDialog = useUIStore((s) => s.setIdDialog)
   const setDescriptionDialog = useUIStore((s) => s.setDescriptionDialog)
+  const setQuestionDialog = useUIStore((s) => s.setQuestionDialog)
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
@@ -37,6 +38,7 @@ export function ContextMenu() {
   const itemId = symbol?.itemId
   const hasId = Boolean(itemId && itemId.length > 0)
   const hasDescription = Boolean(symbol?.description && symbol.description.length > 0)
+  const hasQuestion = Boolean(symbol?.question && symbol.question.length > 0)
 
   const handleRotate = (degrees: number) => {
     if (!symbol) return
@@ -92,6 +94,14 @@ export function ContextMenu() {
     setContextMenu(null)
   }
 
+  const handleOpenQuestionDialog = () => {
+    setQuestionDialog({
+      symbolId: contextMenu.symbolId,
+      currentQuestion: symbol?.question ?? ''
+    })
+    setContextMenu(null)
+  }
+
   return (
     <div
       ref={menuRef}
@@ -125,6 +135,9 @@ export function ContextMenu() {
       </button>
       <button className="context-menu-item" onClick={handleOpenDescriptionDialog}>
         {hasDescription ? 'Omschrijving bewerken' : 'Omschrijving toevoegen'}
+      </button>
+      <button className="context-menu-item" onClick={handleOpenQuestionDialog}>
+        {hasQuestion ? 'Vraag bewerken' : 'Vraag toevoegen'}
       </button>
       <button
         className="context-menu-item"
