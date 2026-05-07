@@ -11,14 +11,10 @@ export function getSymbolTooltipRows(
   const location = normalizeTooltipValue(symbol.location)
   const description = normalizeTooltipValue(symbol.description)
 
-  if (!location && !description) {
-    return []
-  }
-
   return [
-    { label: 'Locatie', value: location || '-' },
-    { label: 'Omschrijving', value: description || '-' }
-  ]
+    location ? { label: 'Locatie', value: location } : null,
+    description ? { label: 'Omschrijving', value: description } : null
+  ].filter((row): row is SymbolTooltipRow => row !== null)
 }
 
 export function formatSymbolTooltipText(

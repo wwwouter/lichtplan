@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { formatSymbolTooltipText, getSymbolTooltipRows } from '../components/symbolTooltip'
 
 describe('symbol tooltip details', () => {
-  it('shows both contractor-facing fields when either value exists', () => {
+  it('only shows contractor-facing fields that have a value', () => {
     expect(getSymbolTooltipRows({ location: 'Keukenwand', description: '' })).toEqual([
-      { label: 'Locatie', value: 'Keukenwand' },
-      { label: 'Omschrijving', value: '-' }
+      { label: 'Locatie', value: 'Keukenwand' }
+    ])
+
+    expect(getSymbolTooltipRows({ location: '', description: 'Dimmer voor spots' })).toEqual([
+      { label: 'Omschrijving', value: 'Dimmer voor spots' }
     ])
   })
 
