@@ -354,7 +354,9 @@ export function FloorCanvas({ stageRef }: Props) {
         <Layer listening={false}>
           {floor.symbols.map((sym) => {
             if (!sym.question?.trim() || hiddenSymbolIds.has(sym.symbolId)) return null
-            return <SymbolQuestionMarker key={sym.id} symbol={sym} />
+            const def = getSymbolById(sym.symbolId)
+            if (!def) return null
+            return <SymbolQuestionMarker key={sym.id} symbol={sym} definition={def} />
           })}
           {hoveredSymbol && (
             <SymbolInfoTooltip
