@@ -82,4 +82,34 @@ describe('smart label layout', () => {
 
     expect(layout.get('a')).toEqual({ offsetX: 0, offsetY: 0, moved: false })
   })
+
+  it('does not move a switch label over its own icon', () => {
+    const layout = computeSmartLabelLayout(
+      [
+        {
+          id: 'a',
+          symbolId: 'enkelpolige-schakelaar',
+          x: 100,
+          y: 100,
+          width: 26,
+          height: 26,
+          itemId: '001'
+        },
+        {
+          id: 'b',
+          symbolId: 'dimmer',
+          x: 100,
+          y: 116,
+          width: 26,
+          height: 26,
+          itemId: '002'
+        }
+      ],
+      true,
+      true
+    )
+
+    expect(layout.get('a')).not.toEqual({ offsetX: 0, offsetY: -15, moved: true })
+    expect(layout.get('b')).not.toEqual({ offsetX: 0, offsetY: -15, moved: true })
+  })
 })

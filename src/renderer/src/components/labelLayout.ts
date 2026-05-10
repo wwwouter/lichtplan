@@ -102,8 +102,7 @@ export function computeSmartLabelLayout(
         (sum, placed) => sum + overlapArea(expandBox(box, LABEL_GAP / 2), placed),
         0
       )
-      const symbolOverlap = iconObstacles.reduce((sum, obstacle, obstacleIndex) => {
-        if (items[obstacleIndex].id === label.item.id) return sum
+      const symbolOverlap = iconObstacles.reduce((sum, obstacle) => {
         return sum + overlapArea(box, obstacle)
       }, 0)
       const dx = candidate.centerX - label.defaultCenterX
