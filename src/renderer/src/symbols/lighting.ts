@@ -77,17 +77,5 @@ export const lightingSymbols: SymbolDefinition[] = [
       { type: 'circle', x: 2, y: 5, radius: 2, fill: color },
       { type: 'circle', x: 38, y: 5, radius: 2, fill: color }
     ]
-  },
-  {
-    id: 'noodverlichting',
-    name: 'Noodverlichting',
-    category: SymbolCategory.Verlichting,
-    width: 30,
-    height: 30,
-    shapes: [
-      { type: 'line', points: [15, 2, 28, 26, 2, 26], stroke: color, strokeWidth: 2, closed: true, fill: '#ffffff' },
-      { type: 'circle', x: 15, y: 16, radius: 4, fill: color },
-      { type: 'line', points: [15, 8, 15, 10], stroke: color, strokeWidth: 2 }
-    ]
   }
 ]

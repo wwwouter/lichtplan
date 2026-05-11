@@ -3,7 +3,6 @@ import { useCanvasStore } from '../stores/useCanvasStore'
 import { useFileOperations } from '../hooks/useFileOperations'
 import type Konva from 'konva'
 import {
-  exportStageToPNG,
   exportStageToPDFImage,
   exportFloorSnapshotsToPDF,
   type FloorPdfSnapshot,
@@ -84,14 +83,6 @@ export function Toolbar({ stageRef }: Props) {
       container.clientWidth,
       container.clientHeight
     )
-  }
-
-  const handleExportPNG = async () => {
-    if (!stageRef.current) return
-    const dataUrl = exportStageToPNG(stageRef.current)
-    const floor = project.floors.find((f) => f.id === activeFloorId)
-    const fileName = `${project.name} - ${floor?.name ?? 'export'}.png`
-    await window.api.exportPNG(dataUrl, fileName)
   }
 
   const handleExportPDF = async () => {
@@ -258,9 +249,6 @@ export function Toolbar({ stageRef }: Props) {
         <div className="toolbar-separator" />
 
         <div className="toolbar-group">
-          <button onClick={handleExportPNG} title="Exporteren als PNG">
-            <span>PNG</span>
-          </button>
           <button onClick={handleExportPDF} title="Exporteren als PDF">
             <span>PDF</span>
           </button>
