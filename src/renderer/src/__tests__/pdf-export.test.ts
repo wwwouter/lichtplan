@@ -13,6 +13,8 @@ const { pdfInstances, jsPDFMock } = vi.hoisted(() => {
     circles: unknown[][] = []
     lines: unknown[][] = []
     rects: unknown[][] = []
+    triangles: unknown[][] = []
+    lineDashPatterns: unknown[][] = []
     texts: Array<{ args: unknown[]; color: unknown[] }> = []
     textColor: unknown[] = [0, 0, 0]
     pages: unknown[][] = []
@@ -43,6 +45,10 @@ const { pdfInstances, jsPDFMock } = vi.hoisted(() => {
       this.rects.push(args)
     }
 
+    triangle(...args: unknown[]) {
+      this.triangles.push(args)
+    }
+
     text(...args: unknown[]) {
       this.texts.push({ args, color: this.textColor })
     }
@@ -66,6 +72,12 @@ const { pdfInstances, jsPDFMock } = vi.hoisted(() => {
     setLineWidth(..._args: unknown[]) {
       return this
     }
+
+    setLineDashPattern(...args: unknown[]) {
+      this.lineDashPatterns.push(args)
+      return this
+    }
+
     setTextColor(...args: unknown[]) {
       this.textColor = args
     }
@@ -177,5 +189,106 @@ describe('PDF export', () => {
 
     expect(label?.color).toEqual([0, 0, 0])
     expect(count?.color).toEqual([0, 0, 0])
+  })
+
+  it('fills arc-based legend icons instead of reducing them to an outline', () => {
+    const legendItem: PdfLegendItem = {
+      symbolId: 'wandlamp',
+      name: 'Wandlamp',
+      category: SymbolCategory.Verlichting,
+      color: '#F59E0B',
+      count: 1,
+      icon: {
+        width: 30,
+        height: 24,
+        shapes: [
+          {
+            type: 'arc',
+            x: 15,
+            y: 20,
+            innerRadius: 0,
+            outerRadius: 12,
+            angle: 180,
+            rotation: -180,
+            fill: '#F59E0B'
+          }
+        ]
+      }
+    }
+
+    exportFloorSnapshotsToPDF([], project, { includeLegend: true, legendItems: [legendItem] })
+
+    expect(pdfInstances[0].triangles.length).toBeGreaterThan(0)
+    expect(pdfInstances[0].lines.length).toBe(0)
+  })
+
+  it('fills closed polygon legend icons so network contactdozen stay readable', () => {
+    const legendItem: PdfLegendItem = {
+      symbolId: 'cat6a-contactdoos',
+      name: 'Cat6a contactdoos',
+      category: SymbolCategory.Elektra,
+      color: '#3B82F6',
+      count: 1,
+      icon: {
+        width: 26,
+        height: 24,
+        shapes: [
+          {
+            type: 'line',
+            points: [1, 24, 25, 24, 13, 2],
+            stroke: '#3B82F6',
+            strokeWidth: 2,
+            closed: true,
+            fill: '#ffffff'
+          }
+        ]
+      }
+    }
+
+    exportFloorSnapshotsToPDF([], project, { includeLegend: true, legendItems: [legendItem] })
+
+    expect(pdfInstances[0].triangles.at(-1)?.at(-1)).toBe('FD')
+  })
+
+  it('preserves dashed line styling for LED strip legend icons', () => {
+    const legendItem: PdfLegendItem = {
+      symbolId: 'led-strip',
+      name: 'LED strip',
+      category: SymbolCategory.Verlichting,
+      color: '#F59E0B',
+      count: 1,
+      icon: {
+        width: 40,
+        height: 10,
+        shapes: [{ type: 'line', points: [2, 5, 38, 5], stroke: '#F59E0B', strokeWidth: 3, dash: [4, 3] }]
+      }
+    }
+
+    exportFloorSnapshotsToPDF([], project, { includeLegend: true, legendItems: [legendItem] })
+
+    const [dashPattern, dashPhase] = pdfInstances[0].lineDashPatterns[0] as [number[], number]
+    expect(dashPattern[0]).toBeCloseTo(0.6)
+    expect(dashPattern[1]).toBeCloseTo(0.45)
+    expect(dashPhase).toBe(0)
+    expect(pdfInstances[0].lineDashPatterns.at(-1)).toEqual([[], 0])
+  })
+
+  it('draws SVG arc path legend icons as curved paths', () => {
+    const legendItem: PdfLegendItem = {
+      symbolId: 'bewegingssensor',
+      name: 'Bewegingssensor',
+      category: SymbolCategory.Overig,
+      color: '#8B5CF6',
+      count: 1,
+      icon: {
+        width: 30,
+        height: 30,
+        shapes: [{ type: 'path', data: 'M 8.9 17.9 A 8 8 0 0 1 21.1 17.9', stroke: '#8B5CF6', strokeWidth: 2 }]
+      }
+    }
+
+    exportFloorSnapshotsToPDF([], project, { includeLegend: true, legendItems: [legendItem] })
+
+    expect(pdfInstances[0].lines.length).toBeGreaterThan(1)
   })
 })

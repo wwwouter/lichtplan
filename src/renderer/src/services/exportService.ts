@@ -3,6 +3,27 @@ import { jsPDF } from 'jspdf'
 import { Project } from '../types/project'
 import type { SymbolShape } from '../symbols'
 
+type PdfDrawStyle = 'S' | 'F' | 'FD'
+type TrianglePdf = jsPDF & {
+  triangle?: (
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    style?: PdfDrawStyle
+  ) => unknown
+}
+type DashedPdf = jsPDF & {
+  setLineDashPattern?: (dashArray: number[], dashPhase: number) => unknown
+}
+
+interface PdfPoint {
+  x: number
+  y: number
+}
+
 export const PDF_FLOOR_IMAGE_OPTIONS = {
   pixelRatio: 1,
   mimeType: 'image/jpeg' as const,
@@ -289,23 +310,7 @@ function drawSymbolShape(
       )
       return
     case 'line':
-      setStroke(doc, shape.stroke ?? color, shape.strokeWidth, scale)
-      for (let index = 0; index < shape.points.length - 2; index += 2) {
-        doc.line(
-          offsetX + shape.points[index] * scale,
-          offsetY + shape.points[index + 1] * scale,
-          offsetX + shape.points[index + 2] * scale,
-          offsetY + shape.points[index + 3] * scale
-        )
-      }
-      if (shape.closed && shape.points.length >= 4) {
-        doc.line(
-          offsetX + shape.points[shape.points.length - 2] * scale,
-          offsetY + shape.points[shape.points.length - 1] * scale,
-          offsetX + shape.points[0] * scale,
-          offsetY + shape.points[1] * scale
-        )
-      }
+      drawLineShape(doc, shape, color, offsetX, offsetY, scale)
       return
     case 'rect':
       setShapeColors(doc, shape.stroke, shape.fill, color)
@@ -319,12 +324,13 @@ function drawSymbolShape(
       return
     case 'text':
       setTextColor(doc, shape.fill ?? color)
+      doc.setFont('helvetica', shape.fontStyle ?? 'normal')
       doc.setFontSize(shape.fontSize * scale * 2.8)
       doc.text(shape.text, offsetX + shape.x * scale, offsetY + (shape.y + shape.fontSize) * scale)
+      doc.setFont('helvetica', 'normal')
       return
     case 'arc':
-      setStroke(doc, shape.stroke ?? shape.fill ?? color, shape.strokeWidth, scale)
-      drawArc(doc, shape, offsetX, offsetY, scale)
+      drawArc(doc, shape, color, offsetX, offsetY, scale)
       return
     case 'path':
       setStroke(doc, shape.stroke ?? color, shape.strokeWidth, scale)
@@ -333,29 +339,66 @@ function drawSymbolShape(
   }
 }
 
+function drawLineShape(
+  doc: jsPDF,
+  shape: Extract<SymbolShape, { type: 'line' }>,
+  color: string,
+  offsetX: number,
+  offsetY: number,
+  scale: number
+): void {
+  const points = toPdfPoints(shape.points, offsetX, offsetY, scale)
+  const effectiveStroke = shape.stroke ?? color
+  setStroke(doc, effectiveStroke, shape.strokeWidth, scale)
+  if (shape.fill) setFill(doc, shape.fill)
+
+  if (shape.closed && points.length === 3) {
+    drawTriangle(doc, points[0], points[1], points[2], shape.fill ? 'FD' : 'S')
+    return
+  }
+
+  setLineDash(doc, shape.dash, scale)
+  for (let index = 0; index < points.length - 1; index += 1) {
+    drawLineBetween(doc, points[index], points[index + 1])
+  }
+  if (shape.closed && points.length >= 2) {
+    drawLineBetween(doc, points[points.length - 1], points[0])
+  }
+  setLineDash(doc, undefined, scale)
+}
+
 function drawArc(
   doc: jsPDF,
   shape: Extract<SymbolShape, { type: 'arc' }>,
+  color: string,
   offsetX: number,
   offsetY: number,
   scale: number
 ): void {
   const centerX = offsetX + shape.x * scale
   const centerY = offsetY + shape.y * scale
-  const radius = shape.outerRadius * scale
+  const outerRadius = shape.outerRadius * scale
+  const innerRadius = shape.innerRadius * scale
   const start = ((shape.rotation ?? 0) * Math.PI) / 180
   const end = start + (shape.angle * Math.PI) / 180
   const segments = 14
 
-  let prevX = centerX + Math.cos(start) * radius
-  let prevY = centerY + Math.sin(start) * radius
-  for (let i = 1; i <= segments; i += 1) {
-    const angle = start + ((end - start) * i) / segments
-    const nextX = centerX + Math.cos(angle) * radius
-    const nextY = centerY + Math.sin(angle) * radius
-    doc.line(prevX, prevY, nextX, nextY)
-    prevX = nextX
-    prevY = nextY
+  if (shape.fill) {
+    setFill(doc, shape.fill)
+    drawArcFill(doc, { x: centerX, y: centerY }, innerRadius, outerRadius, start, end, segments)
+  }
+
+  if ((shape.strokeWidth ?? 0) > 0) {
+    setStroke(doc, shape.stroke ?? color, shape.strokeWidth, scale)
+    const outerPoints = getArcPoints({ x: centerX, y: centerY }, outerRadius, start, end, segments)
+    drawPolyline(doc, outerPoints)
+
+    if (innerRadius > 0) {
+      const innerPoints = getArcPoints({ x: centerX, y: centerY }, innerRadius, start, end, segments)
+      drawPolyline(doc, innerPoints)
+      drawLineBetween(doc, outerPoints[0], innerPoints[0])
+      drawLineBetween(doc, outerPoints[outerPoints.length - 1], innerPoints[innerPoints.length - 1])
+    }
   }
 }
 
@@ -366,6 +409,22 @@ function drawSimplePath(
   offsetY: number,
   scale: number
 ): void {
+  const arcPath = parseArcPath(data)
+  if (arcPath) {
+    const start = { x: offsetX + arcPath.start.x * scale, y: offsetY + arcPath.start.y * scale }
+    const end = { x: offsetX + arcPath.end.x * scale, y: offsetY + arcPath.end.y * scale }
+    drawSvgArc(
+      doc,
+      start,
+      end,
+      arcPath.rx * scale,
+      arcPath.ry * scale,
+      arcPath.largeArc,
+      arcPath.sweep
+    )
+    return
+  }
+
   const numbers = data.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? []
   if (numbers.length < 4) return
   doc.line(
@@ -374,6 +433,155 @@ function drawSimplePath(
     offsetX + numbers[numbers.length - 2] * scale,
     offsetY + numbers[numbers.length - 1] * scale
   )
+}
+
+function drawArcFill(
+  doc: jsPDF,
+  center: PdfPoint,
+  innerRadius: number,
+  outerRadius: number,
+  start: number,
+  end: number,
+  segments: number
+): void {
+  const outerPoints = getArcPoints(center, outerRadius, start, end, segments)
+
+  if (innerRadius <= 0) {
+    for (let index = 0; index < outerPoints.length - 1; index += 1) {
+      drawTriangle(doc, center, outerPoints[index], outerPoints[index + 1], 'F')
+    }
+    return
+  }
+
+  const innerPoints = getArcPoints(center, innerRadius, start, end, segments)
+  for (let index = 0; index < outerPoints.length - 1; index += 1) {
+    drawTriangle(doc, outerPoints[index], outerPoints[index + 1], innerPoints[index + 1], 'F')
+    drawTriangle(doc, outerPoints[index], innerPoints[index + 1], innerPoints[index], 'F')
+  }
+}
+
+function getArcPoints(
+  center: PdfPoint,
+  radius: number,
+  start: number,
+  end: number,
+  segments: number
+): PdfPoint[] {
+  return Array.from({ length: segments + 1 }, (_, index) => {
+    const angle = start + ((end - start) * index) / segments
+    return {
+      x: center.x + Math.cos(angle) * radius,
+      y: center.y + Math.sin(angle) * radius
+    }
+  })
+}
+
+function drawSvgArc(
+  doc: jsPDF,
+  startPoint: PdfPoint,
+  endPoint: PdfPoint,
+  rx: number,
+  ry: number,
+  largeArc: boolean,
+  sweep: boolean
+): void {
+  const dx = (startPoint.x - endPoint.x) / 2
+  const dy = (startPoint.y - endPoint.y) / 2
+  const radiusX = Math.max(rx, Math.abs(dx))
+  const radiusY = Math.max(ry, Math.abs(dy))
+  const sign = largeArc === sweep ? -1 : 1
+  const radiusXSquared = radiusX * radiusX
+  const radiusYSquared = radiusY * radiusY
+  const numerator =
+    radiusXSquared * radiusYSquared -
+    radiusXSquared * dy * dy -
+    radiusYSquared * dx * dx
+  const denominator = radiusXSquared * dy * dy + radiusYSquared * dx * dx
+  const coefficient = denominator === 0 ? 0 : sign * Math.sqrt(Math.max(0, numerator / denominator))
+  const center = {
+    x: (startPoint.x + endPoint.x) / 2 + (coefficient * radiusX * dy) / radiusY,
+    y: (startPoint.y + endPoint.y) / 2 - (coefficient * radiusY * dx) / radiusX
+  }
+  const startAngle = Math.atan2((startPoint.y - center.y) / radiusY, (startPoint.x - center.x) / radiusX)
+  let endAngle = Math.atan2((endPoint.y - center.y) / radiusY, (endPoint.x - center.x) / radiusX)
+
+  if (sweep && endAngle < startAngle) endAngle += Math.PI * 2
+  if (!sweep && endAngle > startAngle) endAngle -= Math.PI * 2
+
+  const segments = 14
+  const points = Array.from({ length: segments + 1 }, (_, index) => {
+    const angle = startAngle + ((endAngle - startAngle) * index) / segments
+    return {
+      x: center.x + Math.cos(angle) * radiusX,
+      y: center.y + Math.sin(angle) * radiusY
+    }
+  })
+  drawPolyline(doc, points)
+}
+
+function parseArcPath(data: string):
+  | {
+      start: PdfPoint
+      end: PdfPoint
+      rx: number
+      ry: number
+      largeArc: boolean
+      sweep: boolean
+    }
+  | null {
+  const arcMatch =
+    /M\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+A\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+([01])\s+([01])\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/i.exec(
+      data
+    )
+  if (!arcMatch) return null
+
+  return {
+    start: { x: Number(arcMatch[1]), y: Number(arcMatch[2]) },
+    end: { x: Number(arcMatch[8]), y: Number(arcMatch[9]) },
+    rx: Number(arcMatch[3]),
+    ry: Number(arcMatch[4]),
+    largeArc: arcMatch[6] === '1',
+    sweep: arcMatch[7] === '1'
+  }
+}
+
+function drawPolyline(doc: jsPDF, points: PdfPoint[]): void {
+  for (let index = 0; index < points.length - 1; index += 1) {
+    drawLineBetween(doc, points[index], points[index + 1])
+  }
+}
+
+function drawLineBetween(doc: jsPDF, start: PdfPoint, end: PdfPoint): void {
+  doc.line(start.x, start.y, end.x, end.y)
+}
+
+function drawTriangle(
+  doc: jsPDF,
+  first: PdfPoint,
+  second: PdfPoint,
+  third: PdfPoint,
+  style: PdfDrawStyle
+): void {
+  const triangle = (doc as TrianglePdf).triangle
+  if (triangle) {
+    triangle.call(doc, first.x, first.y, second.x, second.y, third.x, third.y, style)
+    return
+  }
+
+  drawLineBetween(doc, first, second)
+  drawLineBetween(doc, second, third)
+  drawLineBetween(doc, third, first)
+}
+
+function toPdfPoints(points: number[], offsetX: number, offsetY: number, scale: number): PdfPoint[] {
+  const pdfPoints: PdfPoint[] = []
+  for (let index = 0; index < points.length - 1; index += 2) {
+    pdfPoints.push({
+      x: offsetX + points[index] * scale,
+      y: offsetY + points[index + 1] * scale
+    })
+  }
+  return pdfPoints
 }
 
 function setShapeColors(
@@ -392,6 +600,12 @@ function setStroke(doc: jsPDF, color: string, strokeWidth = 2, scale = 1): void 
   doc.setLineWidth(Math.max(0.25, strokeWidth * scale * 0.45))
 }
 
+function setLineDash(doc: jsPDF, dash: number[] | undefined, scale: number): void {
+  const setLineDashPattern = (doc as DashedPdf).setLineDashPattern
+  if (!setLineDashPattern) return
+  setLineDashPattern.call(doc, dash ? dash.map((value) => value * scale) : [], 0)
+}
+
 function setFill(doc: jsPDF, color: string): void {
   const [r, g, b] = hexToRgb(color)
   doc.setFillColor(r, g, b)
@@ -402,7 +616,7 @@ function setTextColor(doc: jsPDF, color: string): void {
   doc.setTextColor(r, g, b)
 }
 
-function getDrawStyle(stroke: string | undefined, fill: string | undefined): 'S' | 'F' | 'FD' {
+function getDrawStyle(stroke: string | undefined, fill: string | undefined): PdfDrawStyle {
   if (stroke && fill) return 'FD'
   if (fill) return 'F'
   return 'S'
