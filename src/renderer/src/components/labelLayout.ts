@@ -30,6 +30,7 @@ export interface LabelLayoutItem {
   height: number
   itemId?: string
   label?: string
+  location?: string
   category?: string
 }
 
@@ -55,14 +56,20 @@ interface Candidate {
 }
 
 export function getSymbolLabelText(
-  symbol: Pick<PlacedSymbol, 'itemId' | 'label'>,
+  symbol: Pick<PlacedSymbol, 'itemId' | 'label' | 'location'>,
   showItemId: boolean,
   showLabel: boolean
 ): string | null {
+  const descriptiveLines = showLabel
+    ? [symbol.label, symbol.location].flatMap((value) => getDisplayLines(value))
+    : []
+
   if (showItemId && symbol.itemId) {
-    return showLabel && symbol.label ? `[${symbol.itemId}]\n${symbol.label}` : `[${symbol.itemId}]`
+    return descriptiveLines.length > 0
+      ? [`[${symbol.itemId}]`, ...descriptiveLines].join('\n')
+      : `[${symbol.itemId}]`
   }
-  if (showLabel && symbol.label) return symbol.label
+  if (descriptiveLines.length > 0) return descriptiveLines.join('\n')
   return null
 }
 
@@ -249,7 +256,15 @@ function buildCandidates(label: PreparedLabel): Candidate[] {
 }
 
 function canMoveLabel(label: PreparedLabel): boolean {
-  return label.item.category === 'Schakelaars' || !label.item.label
+  return label.item.category === 'Schakelaars' || (!label.item.label && !label.item.location)
+}
+
+function getDisplayLines(value: string | undefined): string[] {
+  if (!value) return []
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
 }
 
 function addCandidate(candidates: Candidate[], candidate: Candidate): void {

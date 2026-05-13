@@ -13,6 +13,7 @@ import { SymbolQuestionMarker } from './SymbolQuestionMarker'
 import { computeSmartLabelLayout, type LabelLayoutItem } from './labelLayout'
 import type { PlacedSymbol } from '../types/project'
 import { createDiagramLineSymbol, DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
+import { getPlacedSymbolBounds } from './symbolSizing'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -239,16 +240,18 @@ export function FloorCanvas({ stageRef }: Props) {
       if (hiddenSymbolIds.has(sym.symbolId)) return []
       const def = getSymbolById(sym.symbolId)
       if (!def) return []
+      const bounds = getPlacedSymbolBounds(def)
       return [
         {
           id: sym.id,
           symbolId: sym.symbolId,
           x: sym.x,
           y: sym.y,
-          width: def.width,
-          height: def.height,
+          width: bounds.width,
+          height: bounds.height,
           itemId: sym.itemId,
           label: sym.label,
+          location: sym.location,
           category: def.category
         }
       ]

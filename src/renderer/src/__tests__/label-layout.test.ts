@@ -1,7 +1,47 @@
 import { describe, expect, it } from 'vitest'
-import { computeSmartLabelLayout } from '../components/labelLayout'
+import { computeSmartLabelLayout, getSymbolLabelText } from '../components/labelLayout'
 
 describe('smart label layout', () => {
+  it('includes location in the visible ID and label block', () => {
+    expect(
+      getSymbolLabelText(
+        {
+          itemId: '023',
+          label: 'Wandlamp',
+          location: 'Naast deur\nBoven kast'
+        },
+        true,
+        true
+      )
+    ).toBe('[023]\nWandlamp\nNaast deur\nBoven kast')
+  })
+
+  it('shows location without an ID when label visibility is enabled', () => {
+    expect(
+      getSymbolLabelText(
+        {
+          location: 'Keukenwand'
+        },
+        false,
+        true
+      )
+    ).toBe('Keukenwand')
+  })
+
+  it('keeps location hidden when label visibility is disabled', () => {
+    expect(
+      getSymbolLabelText(
+        {
+          itemId: '023',
+          label: 'Wandlamp',
+          location: 'Keukenwand'
+        },
+        true,
+        false
+      )
+    ).toBe('[023]')
+  })
+
   it('keeps isolated labels in their default position', () => {
     const layout = computeSmartLabelLayout(
       [

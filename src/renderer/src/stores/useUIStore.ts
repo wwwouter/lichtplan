@@ -1,6 +1,15 @@
 import { create } from 'zustand'
 import { ALL_SYMBOLS } from '../symbols'
 
+export const UI_PREFERENCES_STORAGE_KEY = 'lichtplan-ui-preferences'
+
+interface PersistedUIPreferences {
+  showItemId: boolean
+  showGroup: boolean
+  showLabel: boolean
+  hiddenSymbolIds: string[]
+}
+
 interface LabelDialogState {
   symbolId: string
   currentLabel: string
@@ -75,6 +84,68 @@ interface UIState {
   hideOnlySymbol: (symbolId: string) => void
 }
 
+const knownSymbolIds = new Set(ALL_SYMBOLS.map((symbol) => symbol.id))
+const defaultPreferences: PersistedUIPreferences = {
+  showItemId: true,
+  showGroup: true,
+  showLabel: true,
+  hiddenSymbolIds: []
+}
+
+function readUIPreferences(): PersistedUIPreferences {
+  if (typeof window === 'undefined') return defaultPreferences
+
+  try {
+    const raw = window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY)
+    if (!raw) return defaultPreferences
+    const parsed = JSON.parse(raw) as Partial<PersistedUIPreferences>
+
+    return {
+      showItemId:
+        typeof parsed.showItemId === 'boolean'
+          ? parsed.showItemId
+          : defaultPreferences.showItemId,
+      showGroup:
+        typeof parsed.showGroup === 'boolean' ? parsed.showGroup : defaultPreferences.showGroup,
+      showLabel:
+        typeof parsed.showLabel === 'boolean' ? parsed.showLabel : defaultPreferences.showLabel,
+      hiddenSymbolIds: Array.isArray(parsed.hiddenSymbolIds)
+        ? parsed.hiddenSymbolIds.filter(
+            (symbolId): symbolId is string =>
+              typeof symbolId === 'string' && knownSymbolIds.has(symbolId)
+          )
+        : defaultPreferences.hiddenSymbolIds
+    }
+  } catch {
+    return defaultPreferences
+  }
+}
+
+function writeUIPreferences(preferences: PersistedUIPreferences): void {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(UI_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
+  } catch {
+    // Ignore storage failures; the live UI state should still update.
+  }
+}
+
+function persistVisibilityPreferences(
+  state: Pick<UIState, 'showItemId' | 'showGroup' | 'showLabel' | 'hiddenSymbolIds'>,
+  overrides: Partial<PersistedUIPreferences> = {}
+): void {
+  writeUIPreferences({
+    showItemId: state.showItemId,
+    showGroup: state.showGroup,
+    showLabel: state.showLabel,
+    hiddenSymbolIds: Array.from(state.hiddenSymbolIds),
+    ...overrides
+  })
+}
+
+const initialPreferences = readUIPreferences()
+
 export const useUIStore = create<UIState>((set) => ({
   sidebarCollapsed: false,
   contextMenu: null,
@@ -92,10 +163,10 @@ export const useUIStore = create<UIState>((set) => ({
     Schakelaars: true,
     Overig: true
   },
-  hiddenSymbolIds: new Set(),
-  showItemId: true,
-  showGroup: true,
-  showLabel: true,
+  hiddenSymbolIds: new Set(initialPreferences.hiddenSymbolIds),
+  showItemId: initialPreferences.showItemId,
+  showGroup: initialPreferences.showGroup,
+  showLabel: initialPreferences.showLabel,
   loading: null,
   interactionMode: 'default',
   calibrationPixels: null,
@@ -133,6 +204,7 @@ export const useUIStore = create<UIState>((set) => ({
       const next = new Set(state.hiddenSymbolIds)
       if (next.has(symbolId)) next.delete(symbolId)
       else next.add(symbolId)
+      persistVisibilityPreferences(state, { hiddenSymbolIds: Array.from(next) })
       return { hiddenSymbolIds: next }
     }),
 
@@ -142,24 +214,41 @@ export const useUIStore = create<UIState>((set) => ({
 
   setCalibrationPixels: (pixels) => set({ calibrationPixels: pixels }),
 
-  toggleShowItemId: () => set((state) => ({ showItemId: !state.showItemId })),
+  toggleShowItemId: () =>
+    set((state) => {
+      const showItemId = !state.showItemId
+      persistVisibilityPreferences(state, { showItemId })
+      return { showItemId }
+    }),
 
-  toggleShowGroup: () => set((state) => ({ showGroup: !state.showGroup })),
+  toggleShowGroup: () =>
+    set((state) => {
+      const showGroup = !state.showGroup
+      persistVisibilityPreferences(state, { showGroup })
+      return { showGroup }
+    }),
 
-  toggleShowLabel: () => set((state) => ({ showLabel: !state.showLabel })),
+  toggleShowLabel: () =>
+    set((state) => {
+      const showLabel = !state.showLabel
+      persistVisibilityPreferences(state, { showLabel })
+      return { showLabel }
+    }),
 
   showOnlySymbol: (symbolId) =>
-    set(() => {
+    set((state) => {
       const next = new Set<string>()
       ALL_SYMBOLS.forEach((s) => {
         if (s.id !== symbolId) next.add(s.id)
       })
+      persistVisibilityPreferences(state, { hiddenSymbolIds: Array.from(next) })
       return { hiddenSymbolIds: next }
     }),
 
   hideOnlySymbol: (symbolId) =>
-    set(() => {
+    set((state) => {
       const next = new Set<string>([symbolId])
+      persistVisibilityPreferences(state, { hiddenSymbolIds: Array.from(next) })
       return { hiddenSymbolIds: next }
     })
 }))

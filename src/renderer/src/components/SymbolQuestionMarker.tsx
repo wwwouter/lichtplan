@@ -1,6 +1,7 @@
 import { Circle, Group, Text } from 'react-konva'
 import type { PlacedSymbol } from '../types/project'
 import type { SymbolDefinition } from '../symbols'
+import { getPlacedSymbolBounds } from './symbolSizing'
 
 interface Props {
   symbol: Pick<PlacedSymbol, 'x' | 'y'>
@@ -10,9 +11,10 @@ interface Props {
 export function SymbolQuestionMarker({ symbol, definition }: Props) {
   const radius = 8
   const gap = 3
+  const bounds = getPlacedSymbolBounds(definition)
 
   return (
-    <Group x={symbol.x} y={symbol.y - definition.height / 2 - radius - gap} listening={false}>
+    <Group x={symbol.x} y={symbol.y - bounds.height / 2 - radius - gap} listening={false}>
       <Circle
         radius={radius}
         fill="#ffffff"

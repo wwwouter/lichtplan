@@ -8,6 +8,7 @@ import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import { useUIStore } from '../stores/useUIStore'
 import { getSymbolLabelText } from './labelLayout'
+import { getPlacedSymbolBounds, getPlacedSymbolIconScale } from './symbolSizing'
 import {
   DIAGRAM_LINE_SYMBOL_ID,
   getDiagramLine,
@@ -45,7 +46,10 @@ export function SymbolNode({
   const color = CATEGORY_COLORS[definition.category]
   const offsetX = definition.width / 2
   const offsetY = definition.height / 2
+  const iconScale = getPlacedSymbolIconScale(definition)
+  const iconBounds = getPlacedSymbolBounds(definition)
   const isDiagramLine = definition.id === DIAGRAM_LINE_SYMBOL_ID
+  const labelText = getSymbolLabelText(symbol, showItemId, showLabel)
 
   useEffect(() => {
     if (groupRef.current && isSelected) {
@@ -106,48 +110,44 @@ export function SymbolNode({
           <Group rotation={symbol.rotation}>
             {/* Transparent hit area so the Group receives pointer events */}
             <Rect
-              x={-offsetX}
-              y={-offsetY}
-              width={definition.width}
-              height={definition.height}
+              x={-Math.max(iconBounds.width, 16) / 2}
+              y={-Math.max(iconBounds.height, 16) / 2}
+              width={Math.max(iconBounds.width, 16)}
+              height={Math.max(iconBounds.height, 16)}
               fill="transparent"
             />
-            <SymbolRenderer
-              shapes={definition.shapes}
-              color={color}
-              offsetX={offsetX}
-              offsetY={offsetY}
-            />
-            {isSelected && (
-              <SelectionOutline
-                width={definition.width}
-                height={definition.height}
+            <Group scaleX={iconScale} scaleY={iconScale}>
+              <SymbolRenderer
+                shapes={definition.shapes}
+                color={color}
                 offsetX={offsetX}
                 offsetY={offsetY}
+              />
+            </Group>
+            {isSelected && (
+              <SelectionOutline
+                width={iconBounds.width}
+                height={iconBounds.height}
+                offsetX={iconBounds.offsetX}
+                offsetY={iconBounds.offsetY}
               />
             )}
           </Group>
           {showGroup && symbol.group && (
             <GroupBadge
               group={symbol.group}
-              offsetX={offsetX}
-              offsetY={offsetY}
-              definitionWidth={definition.width}
+              offsetX={iconBounds.offsetX}
+              offsetY={iconBounds.offsetY}
+              definitionWidth={iconBounds.width}
             />
           )}
-          {((showItemId && symbol.itemId) || (showLabel && symbol.label)) && (
+          {labelText && (
             <SymbolLabel
-              text={
-                showItemId && symbol.itemId
-                  ? showLabel && symbol.label
-                    ? `[${symbol.itemId}]\n${symbol.label}`
-                    : `[${symbol.itemId}]`
-                  : (symbol.label ?? '')
-              }
-              y={offsetY + 4}
-              minWidth={definition.width}
+              text={labelText}
+              y={iconBounds.offsetY + 4}
+              minWidth={iconBounds.width}
               offset={labelLayout}
-              leaderFrom={getLeaderStart(labelLayout, offsetX, offsetY)}
+              leaderFrom={getLeaderStart(labelLayout, iconBounds.offsetX, iconBounds.offsetY)}
             />
           )}
         </>
@@ -560,7 +560,7 @@ function GroupBadge({
   offsetY: number
   definitionWidth: number
 }) {
-  const radius = 7
+  const radius = 4.5
   // bottom-left at 12.5% of icon width
   const x = -offsetX + definitionWidth * 0.125
   const y = offsetY - radius
@@ -572,7 +572,7 @@ function GroupBadge({
       <Text
         text={display}
         fill="#000000"
-        fontSize={7}
+        fontSize={5.5}
         fontStyle="bold"
         align="center"
         verticalAlign="middle"

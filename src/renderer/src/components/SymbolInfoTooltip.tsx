@@ -4,6 +4,7 @@ import Konva from 'konva'
 import type { PlacedSymbol } from '../types/project'
 import type { SymbolDefinition } from '../symbols'
 import { formatSymbolTooltipText } from './symbolTooltip'
+import { getPlacedSymbolBounds } from './symbolSizing'
 
 interface Props {
   symbol: PlacedSymbol
@@ -34,8 +35,9 @@ export function SymbolInfoTooltip({ symbol, definition }: Props) {
   const padY = 5
   const boxWidth = width + padX * 2
   const boxHeight = textHeight + padY * 2
-  const x = symbol.x + definition.width / 2 + 8
-  const y = symbol.y - definition.height / 2 - boxHeight - 8
+  const bounds = getPlacedSymbolBounds(definition)
+  const x = symbol.x + bounds.width / 2 + 8
+  const y = symbol.y - bounds.height / 2 - boxHeight - 8
 
   return (
     <Group x={x} y={y} listening={false}>
