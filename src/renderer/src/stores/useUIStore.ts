@@ -41,6 +41,11 @@ interface IdDialogState {
 }
 
 export type InteractionMode = 'default' | 'calibrate' | 'measure' | 'draw-line'
+export type UINotification = {
+  id: number
+  type: 'success' | 'error'
+  message: string
+}
 
 interface UIState {
   sidebarCollapsed: boolean
@@ -59,6 +64,7 @@ interface UIState {
   showGroup: boolean
   showLabel: boolean
   loading: string | null
+  notification: UINotification | null
   interactionMode: InteractionMode
   calibrationPixels: number | null
 
@@ -75,6 +81,8 @@ interface UIState {
   toggleCategory: (category: string) => void
   toggleSymbolVisibility: (symbolId: string) => void
   setLoading: (message: string | null) => void
+  setNotification: (notification: Omit<UINotification, 'id'> | null) => void
+  clearNotification: () => void
   setInteractionMode: (mode: InteractionMode) => void
   setCalibrationPixels: (pixels: number | null) => void
   toggleShowItemId: () => void
@@ -145,6 +153,7 @@ function persistVisibilityPreferences(
 }
 
 const initialPreferences = readUIPreferences()
+let notificationId = 0
 
 export const useUIStore = create<UIState>((set) => ({
   sidebarCollapsed: false,
@@ -168,6 +177,7 @@ export const useUIStore = create<UIState>((set) => ({
   showGroup: initialPreferences.showGroup,
   showLabel: initialPreferences.showLabel,
   loading: null,
+  notification: null,
   interactionMode: 'default',
   calibrationPixels: null,
 
@@ -209,6 +219,13 @@ export const useUIStore = create<UIState>((set) => ({
     }),
 
   setLoading: (message) => set({ loading: message }),
+
+  setNotification: (notification) =>
+    set({
+      notification: notification ? { ...notification, id: ++notificationId } : null
+    }),
+
+  clearNotification: () => set({ notification: null }),
 
   setInteractionMode: (mode) => set({ interactionMode: mode, calibrationPixels: null }),
 
@@ -252,3 +269,19 @@ export const useUIStore = create<UIState>((set) => ({
       return { hiddenSymbolIds: next }
     })
 }))
+
+export function clearTransientUIState(): void {
+  useUIStore.setState({ loading: null })
+}
+
+if (import.meta.hot) {
+  const clearLoadingForHotUpdate = () => clearTransientUIState()
+
+  import.meta.hot.on('vite:beforeUpdate', clearLoadingForHotUpdate)
+  import.meta.hot.on('vite:beforeFullReload', clearLoadingForHotUpdate)
+  import.meta.hot.dispose(() => {
+    import.meta.hot?.off('vite:beforeUpdate', clearLoadingForHotUpdate)
+    import.meta.hot?.off('vite:beforeFullReload', clearLoadingForHotUpdate)
+    clearLoadingForHotUpdate()
+  })
+}

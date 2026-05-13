@@ -1,9 +1,10 @@
 import type { SymbolDefinition } from '../symbols'
 import { DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
 
-export const PLACED_SYMBOL_ICON_SCALE = 0.33
+export const PLACED_SYMBOL_ICON_SCALE = 0.5
+export const PLACED_SYMBOL_DETAIL_SCALE = PLACED_SYMBOL_ICON_SCALE
 
-const UNSCALED_SYMBOL_IDS = new Set(['tekst', DIAGRAM_LINE_SYMBOL_ID])
+const UNSCALED_SYMBOL_IDS = new Set([DIAGRAM_LINE_SYMBOL_ID])
 
 export interface PlacedSymbolBounds {
   width: number
@@ -14,6 +15,10 @@ export interface PlacedSymbolBounds {
 
 export function getPlacedSymbolIconScale(definition: Pick<SymbolDefinition, 'id'>): number {
   return UNSCALED_SYMBOL_IDS.has(definition.id) ? 1 : PLACED_SYMBOL_ICON_SCALE
+}
+
+export function getPlacedSymbolDetailScale(_definition: Pick<SymbolDefinition, 'id'>): number {
+  return PLACED_SYMBOL_DETAIL_SCALE
 }
 
 export function getPlacedSymbolBounds(

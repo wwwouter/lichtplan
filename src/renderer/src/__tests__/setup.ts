@@ -1,7 +1,10 @@
 import '@testing-library/jest-dom'
+import { vi } from 'vitest'
 
 // Mock window.api for tests
 Object.defineProperty(window, 'api', {
+  configurable: true,
+  writable: true,
   value: {
     openProject: vi.fn(),
     saveProject: vi.fn(),

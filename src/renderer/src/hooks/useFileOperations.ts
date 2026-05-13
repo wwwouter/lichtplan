@@ -15,24 +15,61 @@ export function useFileOperations() {
   }, [newProject])
 
   const handleOpen = useCallback(async () => {
-    const result = await window.api.openProject()
-    if (!result) return
-    useUIStore.getState().setLoading('Project openen...')
+    const ui = useUIStore.getState()
+    ui.setNotification(null)
+
     try {
+      const result = await window.api.openProject()
+      if (!result) {
+        ui.setNotification({
+          type: 'error',
+          message: 'Openen is geannuleerd of geblokkeerd door de browser.'
+        })
+        return
+      }
+      ui.setLoading('Project openen...')
       const proj = deserializeProject(result.data)
       setProject(proj, result.filePath)
       useCanvasStore.getState().resetZoom()
+      ui.setNotification({
+        type: 'success',
+        message: `Project geopend: ${getDisplayFileName(result.filePath)}.`
+      })
+    } catch (error) {
+      ui.setNotification({
+        type: 'error',
+        message: `Openen mislukt: ${getErrorMessage(error)}`
+      })
     } finally {
-      useUIStore.getState().setLoading(null)
+      ui.setLoading(null)
     }
   }, [setProject])
 
   const handleSave = useCallback(async () => {
-    const data = serializeProject(project)
-    const savedPath = await window.api.saveProject(data, filePath ?? undefined)
-    if (savedPath) {
-      setFilePath(savedPath)
-      markClean()
+    const ui = useUIStore.getState()
+    ui.setNotification(null)
+
+    try {
+      const data = serializeProject(project)
+      const savedPath = await window.api.saveProject(data, filePath ?? undefined)
+      if (savedPath) {
+        setFilePath(savedPath)
+        markClean()
+        ui.setNotification({
+          type: 'success',
+          message: `Project opgeslagen: ${getDisplayFileName(savedPath)}.`
+        })
+      } else {
+        ui.setNotification({
+          type: 'error',
+          message: 'Opslaan is geannuleerd of geblokkeerd door de browser.'
+        })
+      }
+    } catch (error) {
+      ui.setNotification({
+        type: 'error',
+        message: `Opslaan mislukt: ${getErrorMessage(error)}`
+      })
     }
   }, [project, filePath, setFilePath, markClean])
 
@@ -46,14 +83,32 @@ export function useFileOperations() {
   }, [project, setFilePath, markClean])
 
   const handleLoadImage = useCallback(async () => {
-    const result = await window.api.openImage()
-    if (!result) return
-    useUIStore.getState().setLoading('Afbeelding laden...')
+    const ui = useUIStore.getState()
+    ui.setNotification(null)
+
     try {
+      const result = await window.api.openImage()
+      if (!result) {
+        ui.setNotification({
+          type: 'error',
+          message: 'Plattegrond openen is geannuleerd of geblokkeerd door de browser.'
+        })
+        return
+      }
+      ui.setLoading('Afbeelding laden...')
       const image = await loadFloorPlanImage(result.data, result.fileName)
       setFloorImage(activeFloorId, image)
+      ui.setNotification({
+        type: 'success',
+        message: `Plattegrond geopend: ${getDisplayFileName(result.fileName)}.`
+      })
+    } catch (error) {
+      ui.setNotification({
+        type: 'error',
+        message: `Plattegrond openen mislukt: ${getErrorMessage(error)}`
+      })
     } finally {
-      useUIStore.getState().setLoading(null)
+      ui.setLoading(null)
     }
   }, [activeFloorId, setFloorImage])
 
@@ -64,4 +119,16 @@ export function useFileOperations() {
     handleSaveAs,
     handleLoadImage
   }
+}
+
+function getDisplayFileName(path: string): string {
+  return path.split(/[\\/]/).pop() ?? path
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  if (typeof error === 'string') return error
+  return 'onbekende fout'
 }

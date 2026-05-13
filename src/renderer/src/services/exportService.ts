@@ -1,7 +1,7 @@
 import Konva from 'konva'
 import { jsPDF } from 'jspdf'
 import { Project } from '../types/project'
-import type { SymbolShape } from '../symbols'
+import type { SymbolCategory, SymbolShape } from '../symbols'
 
 type PdfDrawStyle = 'S' | 'F' | 'FD'
 type TrianglePdf = jsPDF & {
@@ -41,7 +41,7 @@ export interface FloorPdfSnapshot {
 export interface PdfLegendItem {
   symbolId: string
   name: string
-  category: string
+  category: SymbolCategory
   color: string
   count: number
   icon: {

@@ -685,6 +685,56 @@ body {
   font-size: 14px;
 }
 
+/* === Notifications === */
+.notification-toast {
+  position: fixed;
+  top: calc(var(--toolbar-height) + 12px);
+  right: 16px;
+  z-index: 10000;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 380px;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.notification-toast span {
+  max-height: 50vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.notification-toast.success {
+  border-color: #16a34a;
+}
+
+.notification-toast.error {
+  border-color: #dc2626;
+}
+
+.notification-toast button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.notification-toast button:hover {
+  color: #0f172a;
+}
+
 .items-list-sortable-header {
   cursor: pointer;
   user-select: none;

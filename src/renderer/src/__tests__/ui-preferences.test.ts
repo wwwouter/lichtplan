@@ -60,4 +60,16 @@ describe('UI visibility preferences', () => {
     expect(persisted.hiddenSymbolIds).not.toContain('wandlamp')
     expect(persisted.hiddenSymbolIds.length).toBeGreaterThan(0)
   })
+
+  it('clears transient loading state without changing persisted visibility preferences', async () => {
+    const { clearTransientUIState, useUIStore } = await import('../stores/useUIStore')
+
+    useUIStore.getState().toggleShowLabel()
+    useUIStore.getState().setLoading('PDF exporteren...')
+
+    clearTransientUIState()
+
+    expect(useUIStore.getState().loading).toBeNull()
+    expect(useUIStore.getState().showLabel).toBe(false)
+  })
 })

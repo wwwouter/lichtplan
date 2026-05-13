@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactElement } from 'react'
 import Konva from 'konva'
 import { Toolbar } from './components/Toolbar'
 import { Sidebar } from './components/Sidebar'
@@ -14,13 +14,14 @@ import { LocationDialog } from './components/LocationDialog'
 import { IdDialog } from './components/IdDialog'
 import { DescriptionDialog } from './components/DescriptionDialog'
 import { QuestionDialog } from './components/QuestionDialog'
+import { NotificationToast } from './components/NotificationToast'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useFileOperations } from './hooks/useFileOperations'
 import { useProjectStore } from './stores/useProjectStore'
 import { useUIStore } from './stores/useUIStore'
 import { exportStageToPNG } from './services/exportService'
 
-function App(): JSX.Element {
+function App(): ReactElement {
   const stageRef = useRef<Konva.Stage | null>(null)
   const { handleNew, handleOpen, handleSave, handleLoadImage } = useFileOperations()
   const project = useProjectStore((s) => s.project)
@@ -93,6 +94,7 @@ function App(): JSX.Element {
       <DescriptionDialog />
       <QuestionDialog />
       <LoadingOverlay />
+      <NotificationToast />
     </div>
   )
 }

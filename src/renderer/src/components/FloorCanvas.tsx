@@ -13,7 +13,7 @@ import { SymbolQuestionMarker } from './SymbolQuestionMarker'
 import { computeSmartLabelLayout, type LabelLayoutItem } from './labelLayout'
 import type { PlacedSymbol } from '../types/project'
 import { createDiagramLineSymbol, DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
-import { getPlacedSymbolBounds } from './symbolSizing'
+import { getPlacedSymbolBounds, getPlacedSymbolDetailScale } from './symbolSizing'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -136,7 +136,7 @@ export function FloorCanvas({ stageRef }: Props) {
   }, [interactionMode])
 
   const getCanvasPoint = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
+    (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       const stage = e.target.getStage()
       if (!stage) return null
       const pointer = stage.getPointerPosition()
@@ -150,7 +150,7 @@ export function FloorCanvas({ stageRef }: Props) {
   )
 
   const handleStageClick = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
+    (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       if (
         interactionMode === 'calibrate' ||
         interactionMode === 'measure' ||
@@ -252,7 +252,8 @@ export function FloorCanvas({ stageRef }: Props) {
           itemId: sym.itemId,
           label: sym.label,
           location: sym.location,
-          category: def.category
+          category: def.category,
+          detailScale: getPlacedSymbolDetailScale(def)
         }
       ]
     })
@@ -268,6 +269,19 @@ export function FloorCanvas({ stageRef }: Props) {
     if (!definition) return null
     return { symbol, definition }
   }, [floor, hoveredSymbolId, hiddenSymbolIds])
+
+  if (!floor) {
+    return (
+      <div
+        ref={containerRef}
+        className="floor-canvas-container"
+        style={cursorStyle ? { cursor: cursorStyle } : undefined}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onContextMenu={(e) => e.preventDefault()}
+      />
+    )
+  }
 
   return (
     <div

@@ -1,13 +1,12 @@
 import type { PlacedSymbol } from '../types/project'
 
-const FONT_SIZE = 11
+const BASE_FONT_SIZE = 11
 const LINE_HEIGHT = 1
-const PAD_X = 2
-const PAD_Y = 1
-const AVG_CHAR_WIDTH = FONT_SIZE * 0.62
-const LABEL_GAP = 4
-const SYMBOL_PAD = 3
-const MAX_LABEL_MOVE = 42
+const BASE_PAD_X = 2
+const BASE_PAD_Y = 1
+const BASE_LABEL_GAP = 4
+const BASE_SYMBOL_PAD = 3
+const BASE_MAX_LABEL_MOVE = 42
 
 interface LabelSize {
   width: number
@@ -32,6 +31,7 @@ export interface LabelLayoutItem {
   label?: string
   location?: string
   category?: string
+  detailScale?: number
 }
 
 export interface LabelLayout {
@@ -79,19 +79,23 @@ export function computeSmartLabelLayout(
   showLabel: boolean
 ): Map<string, LabelLayout> {
   const prepared = prepareLabels(items, showItemId, showLabel)
-  const iconObstacles = items.map((item) =>
-    expandBox(
+  const iconObstacles = items.map((item) => {
+    const metrics = getLabelMetrics(item.detailScale)
+    return expandBox(
       {
         left: item.x - item.width / 2,
         top: item.y - item.height / 2,
         right: item.x + item.width / 2,
         bottom: item.y + item.height / 2
       },
-      SYMBOL_PAD
+      metrics.symbolPad
     )
-  )
+  })
   const fixedLabels = prepared.filter((label) => !canMoveLabel(label))
-  const placedBoxes: Box[] = fixedLabels.map((label) => expandBox(label.defaultBox, LABEL_GAP / 2))
+  const placedBoxes: Box[] = fixedLabels.map((label) => {
+    const metrics = getLabelMetrics(label.item.detailScale)
+    return expandBox(label.defaultBox, metrics.labelGap / 2)
+  })
   const result = new Map<string, LabelLayout>()
 
   fixedLabels.forEach((label) => {
@@ -104,9 +108,10 @@ export function computeSmartLabelLayout(
     let bestScore = Number.POSITIVE_INFINITY
 
     candidates.forEach((candidate, index) => {
+      const metrics = getLabelMetrics(label.item.detailScale)
       const box = candidateBox(candidate, label.size)
       const labelOverlap = placedBoxes.reduce(
-        (sum, placed) => sum + overlapArea(expandBox(box, LABEL_GAP / 2), placed),
+        (sum, placed) => sum + overlapArea(expandBox(box, metrics.labelGap / 2), placed),
         0
       )
       const symbolOverlap = iconObstacles.reduce((sum, obstacle) => {
@@ -129,8 +134,9 @@ export function computeSmartLabelLayout(
       }
     })
 
+    const metrics = getLabelMetrics(label.item.detailScale)
     const box = candidateBox(bestCandidate, label.size)
-    placedBoxes.push(expandBox(box, LABEL_GAP / 2))
+    placedBoxes.push(expandBox(box, metrics.labelGap / 2))
     const offsetX = bestCandidate.centerX - label.item.x
     const offsetY = bestCandidate.top - label.defaultTop
     result.set(label.item.id, {
@@ -152,8 +158,9 @@ function prepareLabels(
     .map((item) => {
       const text = getSymbolLabelText(item, showItemId, showLabel)
       if (!text || item.symbolId === 'tekst') return null
-      const size = estimateLabelSize(text, item.width)
-      const defaultTop = item.y + item.height / 2 + 4 - PAD_Y
+      const metrics = getLabelMetrics(item.detailScale)
+      const size = estimateLabelSize(text, item.width, metrics)
+      const defaultTop = item.y + item.height / 2 + metrics.labelGap - metrics.padY
       const defaultCenterX = item.x
       return {
         item,
@@ -180,23 +187,29 @@ function prepareLabels(
     .sort((a, b) => b.density - a.density || a.item.y - b.item.y || a.item.x - b.item.x)
 }
 
-function estimateLabelSize(text: string, minWidth: number): LabelSize {
+function estimateLabelSize(
+  text: string,
+  minWidth: number,
+  metrics: ReturnType<typeof getLabelMetrics>
+): LabelSize {
   const words = text.split(/\s+/).filter(Boolean)
   const longestWord = words.reduce((max, word) => Math.max(max, word.length), 0)
-  const lineWidth = Math.max(minWidth, Math.ceil(longestWord * AVG_CHAR_WIDTH))
-  const wrappedLines = text.split('\n').flatMap((line) => wrapLine(line, lineWidth))
+  const lineWidth = Math.max(minWidth, Math.ceil(longestWord * metrics.avgCharWidth))
+  const wrappedLines = text
+    .split('\n')
+    .flatMap((line) => wrapLine(line, lineWidth, metrics.avgCharWidth))
   const maxLineWidth = wrappedLines.reduce(
-    (max, line) => Math.max(max, Math.ceil(line.length * AVG_CHAR_WIDTH)),
+    (max, line) => Math.max(max, Math.ceil(line.length * metrics.avgCharWidth)),
     1
   )
 
   return {
-    width: maxLineWidth + PAD_X * 2,
-    height: Math.max(wrappedLines.length, 1) * FONT_SIZE * LINE_HEIGHT + PAD_Y * 2
+    width: maxLineWidth + metrics.padX * 2,
+    height: Math.max(wrappedLines.length, 1) * metrics.fontSize * LINE_HEIGHT + metrics.padY * 2
   }
 }
 
-function wrapLine(line: string, maxWidth: number): string[] {
+function wrapLine(line: string, maxWidth: number, avgCharWidth: number): string[] {
   const words = line.split(/\s+/).filter(Boolean)
   if (words.length === 0) return ['']
 
@@ -205,7 +218,7 @@ function wrapLine(line: string, maxWidth: number): string[] {
 
   for (const word of words) {
     const next = current ? `${current} ${word}` : word
-    if (next.length * AVG_CHAR_WIDTH <= maxWidth || current.length === 0) {
+    if (next.length * avgCharWidth <= maxWidth || current.length === 0) {
       current = next
     } else {
       lines.push(current)
@@ -219,9 +232,13 @@ function wrapLine(line: string, maxWidth: number): string[] {
 
 function buildCandidates(label: PreparedLabel): Candidate[] {
   const { item, size, defaultCenterX, defaultTop } = label
+  const metrics = getLabelMetrics(item.detailScale)
   const candidates: Candidate[] = []
-  const xStep = Math.min(Math.max(size.width * 0.6, item.width + LABEL_GAP), 36)
-  const yStep = size.height + LABEL_GAP
+  const xStep = Math.min(
+    Math.max(size.width * 0.6, item.width + metrics.labelGap),
+    36 * metrics.scale
+  )
+  const yStep = size.height + metrics.labelGap
   const xOffsets = [0, -xStep, xStep]
   const yOffsets = [0, yStep, -yStep, yStep * 2, -yStep * 2]
 
@@ -234,7 +251,7 @@ function buildCandidates(label: PreparedLabel): Candidate[] {
     }
   }
 
-  const sideGap = 8
+  const sideGap = 8 * metrics.scale
   const verticalOffsets = [0, -yStep, yStep, -yStep * 2, yStep * 2]
   for (const verticalOffset of verticalOffsets) {
     addCandidate(candidates, {
@@ -251,7 +268,7 @@ function buildCandidates(label: PreparedLabel): Candidate[] {
     if (index === 0) return true
     const dx = candidate.centerX - defaultCenterX
     const dy = candidate.top - defaultTop
-    return Math.sqrt(dx * dx + dy * dy) <= MAX_LABEL_MOVE
+    return Math.sqrt(dx * dx + dy * dy) <= BASE_MAX_LABEL_MOVE * metrics.scale
   })
 }
 
@@ -265,6 +282,20 @@ function getDisplayLines(value: string | undefined): string[] {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
+}
+
+function getLabelMetrics(scale = 1) {
+  const normalizedScale = scale > 0 ? scale : 1
+  const fontSize = BASE_FONT_SIZE * normalizedScale
+  return {
+    scale: normalizedScale,
+    fontSize,
+    padX: BASE_PAD_X * normalizedScale,
+    padY: BASE_PAD_Y * normalizedScale,
+    avgCharWidth: fontSize * 0.62,
+    labelGap: BASE_LABEL_GAP * normalizedScale,
+    symbolPad: BASE_SYMBOL_PAD * normalizedScale
+  }
 }
 
 function addCandidate(candidates: Candidate[], candidate: Candidate): void {

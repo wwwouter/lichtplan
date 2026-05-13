@@ -338,7 +338,7 @@ function buildLegendItems(floors: Floor[], hiddenSymbolIds: Set<string>): PdfLeg
 
   const categoryOrder = Object.values(SymbolCategory)
   return Array.from(counts.entries())
-    .map(([symbolId, count]) => {
+    .map<PdfLegendItem | null>(([symbolId, count]) => {
       const definition = getSymbolById(symbolId)
       if (!definition) return null
       return {
@@ -357,7 +357,7 @@ function buildLegendItems(floors: Floor[], hiddenSymbolIds: Set<string>): PdfLeg
     .filter((item): item is PdfLegendItem => item !== null)
     .sort(
       (a, b) =>
-        categoryOrder.indexOf(a.category as SymbolCategory) -
-          categoryOrder.indexOf(b.category as SymbolCategory) || a.name.localeCompare(b.name, 'nl')
+        categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category) ||
+        a.name.localeCompare(b.name, 'nl')
     )
 }

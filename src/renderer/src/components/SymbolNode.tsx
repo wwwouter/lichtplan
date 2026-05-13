@@ -8,7 +8,11 @@ import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import { useUIStore } from '../stores/useUIStore'
 import { getSymbolLabelText } from './labelLayout'
-import { getPlacedSymbolBounds, getPlacedSymbolIconScale } from './symbolSizing'
+import {
+  getPlacedSymbolBounds,
+  getPlacedSymbolDetailScale,
+  getPlacedSymbolIconScale
+} from './symbolSizing'
 import {
   DIAGRAM_LINE_SYMBOL_ID,
   getDiagramLine,
@@ -47,6 +51,7 @@ export function SymbolNode({
   const offsetX = definition.width / 2
   const offsetY = definition.height / 2
   const iconScale = getPlacedSymbolIconScale(definition)
+  const detailScale = getPlacedSymbolDetailScale(definition)
   const iconBounds = getPlacedSymbolBounds(definition)
   const isDiagramLine = definition.id === DIAGRAM_LINE_SYMBOL_ID
   const labelText = getSymbolLabelText(symbol, showItemId, showLabel)
@@ -95,7 +100,12 @@ export function SymbolNode({
       }}
     >
       {definition.id === 'tekst' ? (
-        <TextSymbol rotation={symbol.rotation} text={symbol.label} isSelected={isSelected} />
+        <TextSymbol
+          rotation={symbol.rotation}
+          text={symbol.label}
+          isSelected={isSelected}
+          scale={detailScale}
+        />
       ) : isDiagramLine ? (
         <DiagramLineSymbol
           symbol={symbol}
@@ -103,6 +113,7 @@ export function SymbolNode({
           color={color}
           isSelected={isSelected}
           showLabel={showLabel}
+          detailScale={detailScale}
           updateSymbol={updateSymbol}
         />
       ) : (
@@ -139,15 +150,22 @@ export function SymbolNode({
               offsetX={iconBounds.offsetX}
               offsetY={iconBounds.offsetY}
               definitionWidth={iconBounds.width}
+              scale={detailScale}
             />
           )}
           {labelText && (
             <SymbolLabel
               text={labelText}
-              y={iconBounds.offsetY + 4}
+              y={iconBounds.offsetY + 4 * detailScale}
               minWidth={iconBounds.width}
               offset={labelLayout}
-              leaderFrom={getLeaderStart(labelLayout, iconBounds.offsetX, iconBounds.offsetY)}
+              leaderFrom={getLeaderStart(
+                labelLayout,
+                iconBounds.offsetX,
+                iconBounds.offsetY,
+                detailScale
+              )}
+              scale={detailScale}
             />
           )}
         </>
@@ -162,6 +180,7 @@ function DiagramLineSymbol({
   color,
   isSelected,
   showLabel,
+  detailScale,
   updateSymbol
 }: {
   symbol: PlacedSymbol
@@ -169,6 +188,7 @@ function DiagramLineSymbol({
   color: string
   isSelected: boolean
   showLabel: boolean
+  detailScale: number
   updateSymbol: (floorId: string, symbolId: string, updates: Partial<PlacedSymbol>) => void
 }) {
   const line = getDiagramLine(symbol)
@@ -213,7 +233,9 @@ function DiagramLineSymbol({
         lineCap="round"
         listening={false}
       />
-      {labelText && <LineSymbolLabel text={labelText} x={labelCenter.x} y={labelCenter.y} />}
+      {labelText && (
+        <LineSymbolLabel text={labelText} x={labelCenter.x} y={labelCenter.y} scale={detailScale} />
+      )}
       {isSelected && (
         <>
           <Rect
@@ -280,14 +302,24 @@ function LineHandle({
   )
 }
 
-function LineSymbolLabel({ text, x, y }: { text: string; x: number; y: number }) {
-  const fontSize = 11
+function LineSymbolLabel({
+  text,
+  x,
+  y,
+  scale
+}: {
+  text: string
+  x: number
+  y: number
+  scale: number
+}) {
+  const fontSize = 11 * scale
   const lineHeight = 1
-  const padX = 3
-  const padY = 2
+  const padX = 3 * scale
+  const padY = 2 * scale
   const lines = text.split('\n')
   const longestLine = lines.reduce((max, line) => Math.max(max, line.length), 0)
-  const width = Math.max(24, Math.ceil(longestLine * fontSize * 0.62) + padX * 2)
+  const width = Math.max(24 * scale, Math.ceil(longestLine * fontSize * 0.62) + padX * 2)
   const height = Math.max(lines.length, 1) * fontSize * lineHeight + padY * 2
 
   return (
@@ -299,7 +331,7 @@ function LineSymbolLabel({ text, x, y }: { text: string; x: number; y: number })
         height={height}
         fill="#ffffff"
         stroke="#000000"
-        strokeWidth={1}
+        strokeWidth={1 * scale}
         listening={false}
       />
       <Text
@@ -342,28 +374,30 @@ function getSegmentBounds(start: DiagramLinePoint, end: DiagramLinePoint, paddin
 function TextSymbol({
   rotation,
   text,
-  isSelected
+  isSelected,
+  scale
 }: {
   rotation: number
   text: string | undefined
   isSelected: boolean
+  scale: number
 }) {
-  const fontSize = 14
+  const fontSize = 14 * scale
   const lineHeight = 1.15
-  const padX = 2
-  const padY = 1
+  const padX = 2 * scale
+  const padY = 1 * scale
   const placeholder = 'Tekst'
   const display = text && text.length > 0 ? text : placeholder
   const isPlaceholder = !text
 
   const textRef = useRef<Konva.Text>(null)
-  const [size, setSize] = useState({ width: 40, height: fontSize })
+  const [size, setSize] = useState({ width: 40 * scale, height: fontSize })
 
   useLayoutEffect(() => {
     const node = textRef.current
     if (!node) return
     setSize({ width: node.width(), height: node.height() })
-  }, [display])
+  }, [display, scale])
 
   return (
     <Group rotation={rotation}>
@@ -374,7 +408,7 @@ function TextSymbol({
         height={size.height + padY * 2}
         fill="#ffffff"
         stroke="#000000"
-        strokeWidth={1}
+        strokeWidth={1 * scale}
         listening={true}
       />
       <Text
@@ -390,13 +424,13 @@ function TextSymbol({
       />
       {isSelected && (
         <Rect
-          x={-padX - 4}
-          y={-padY - 4}
-          width={size.width + padX * 2 + 8}
-          height={size.height + padY * 2 + 8}
+          x={-padX - 4 * scale}
+          y={-padY - 4 * scale}
+          width={size.width + padX * 2 + 8 * scale}
+          height={size.height + padY * 2 + 8 * scale}
           stroke="#3B82F6"
-          strokeWidth={1.5}
-          dash={[4, 3]}
+          strokeWidth={1.5 * scale}
+          dash={[4 * scale, 3 * scale]}
           listening={false}
         />
       )}
@@ -409,18 +443,20 @@ function SymbolLabel({
   y,
   minWidth,
   offset,
-  leaderFrom
+  leaderFrom,
+  scale
 }: {
   text: string
   y: number
   minWidth: number
   offset?: { offsetX: number; offsetY: number; moved: boolean }
   leaderFrom?: { x: number; y: number }
+  scale: number
 }) {
-  const fontSize = 11
+  const fontSize = 11 * scale
   const lineHeight = 1
-  const padX = 2
-  const padY = 1
+  const padX = 2 * scale
+  const padY = 1 * scale
   const longestWord = text.split(/\s+/).reduce((m, w) => (w.length > m ? w.length : m), 0)
   const labelWidth = Math.max(minWidth, Math.ceil(longestWord * fontSize * 0.62))
 
@@ -457,7 +493,7 @@ function SymbolLabel({
     leaderFrom && leaderTarget
       ? Math.sqrt((leaderTarget.x - leaderFrom.x) ** 2 + (leaderTarget.y - leaderFrom.y) ** 2)
       : 0
-  const showLeader = offset?.moved && leaderFrom && leaderTarget && leaderLength <= 36
+  const showLeader = offset?.moved && leaderFrom && leaderTarget && leaderLength <= 36 * scale
 
   return (
     <>
@@ -465,7 +501,7 @@ function SymbolLabel({
         <Line
           points={[leaderFrom.x, leaderFrom.y, leaderTarget.x, leaderTarget.y]}
           stroke="#111827"
-          strokeWidth={1}
+          strokeWidth={1 * scale}
           opacity={0.38}
           listening={false}
         />
@@ -478,7 +514,7 @@ function SymbolLabel({
           height={boxHeight}
           fill="#ffffff"
           stroke="#000000"
-          strokeWidth={1}
+          strokeWidth={1 * scale}
           listening={false}
         />
       )}
@@ -502,22 +538,24 @@ function SymbolLabel({
 function getLeaderStart(
   offset: { offsetX: number; offsetY: number; moved: boolean } | undefined,
   offsetX: number,
-  offsetY: number
+  offsetY: number,
+  scale: number
 ): { x: number; y: number } | undefined {
   if (!offset?.moved) return undefined
   const absX = Math.abs(offset.offsetX)
   const absY = Math.abs(offset.offsetY)
+  const gap = 2 * scale
 
   if (absX > absY) {
     return {
-      x: offset.offsetX > 0 ? offsetX + 2 : -offsetX - 2,
+      x: offset.offsetX > 0 ? offsetX + gap : -offsetX - gap,
       y: 0
     }
   }
 
   return {
     x: 0,
-    y: offset.offsetY < 0 ? -offsetY - 2 : offsetY + 2
+    y: offset.offsetY < 0 ? -offsetY - gap : offsetY + gap
   }
 }
 
@@ -553,14 +591,16 @@ function GroupBadge({
   group,
   offsetX,
   offsetY,
-  definitionWidth
+  definitionWidth,
+  scale
 }: {
   group: string
   offsetX: number
   offsetY: number
   definitionWidth: number
+  scale: number
 }) {
-  const radius = 4.5
+  const radius = 7 * scale
   // bottom-left at 12.5% of icon width
   const x = -offsetX + definitionWidth * 0.125
   const y = offsetY - radius
@@ -568,18 +608,18 @@ function GroupBadge({
 
   return (
     <Group x={x} y={y} listening={false}>
-      <Circle radius={radius} fill="#ffffff" stroke="#000000" strokeWidth={1} />
+      <Circle radius={radius} fill="#ffffff" stroke="#000000" strokeWidth={1 * scale} />
       <Text
         text={display}
         fill="#000000"
-        fontSize={5.5}
+        fontSize={7 * scale}
         fontStyle="bold"
         align="center"
         verticalAlign="middle"
         width={radius * 2}
         height={radius * 2}
         x={-radius}
-        y={-radius + 1}
+        y={-radius + 1 * scale}
         listening={false}
       />
     </Group>

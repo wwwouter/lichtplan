@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render } from '@testing-library/react'
 
 const { mockPathRender } = vi.hoisted(() => ({
-  mockPathRender: vi.fn(() => null)
+  mockPathRender: vi.fn((_props: Record<string, unknown>) => null)
 }))
 
 vi.mock('react-konva', () => ({
@@ -29,8 +29,8 @@ describe('SymbolRenderer path offset', () => {
     render(<SymbolRenderer shapes={shapes} color="#8B5CF6" offsetX={15} offsetY={15} />)
 
     expect(mockPathRender).toHaveBeenCalledTimes(1)
-    const props = mockPathRender.mock.calls[0][0]
-    expect(props.x).toBe(-15)
-    expect(props.y).toBe(-15)
+    const props = mockPathRender.mock.calls[0]?.[0]
+    expect(props?.x).toBe(-15)
+    expect(props?.y).toBe(-15)
   })
 })
