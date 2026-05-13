@@ -244,8 +244,17 @@ body {
   background: var(--bg-dark-hover);
 }
 
+.symbol-palette-item.symbol-tool-active {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
 .symbol-palette-item:active {
   cursor: grabbing;
+}
+
+.symbol-palette-item[draggable='false'] {
+  cursor: pointer;
 }
 
 .symbol-preview {
@@ -433,6 +442,12 @@ body {
 
 .context-menu-item:hover {
   background: #f1f5f9;
+}
+
+.context-menu-item.active {
+  background: #dbeafe;
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .context-menu-item.danger {

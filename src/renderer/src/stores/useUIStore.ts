@@ -31,7 +31,7 @@ interface IdDialogState {
   currentId: string
 }
 
-export type InteractionMode = 'default' | 'calibrate' | 'measure'
+export type InteractionMode = 'default' | 'calibrate' | 'measure' | 'draw-line'
 
 interface UIState {
   sidebarCollapsed: boolean

@@ -22,6 +22,14 @@ export interface FloorPlanImage {
   fileName: string
 }
 
+export type DiagramLineType = 'straight' | 'dotted'
+
+export interface DiagramLine {
+  endX: number
+  endY: number
+  type: DiagramLineType
+}
+
 export interface PlacedSymbol {
   id: string
   symbolId: string
@@ -34,4 +42,5 @@ export interface PlacedSymbol {
   description?: string
   question?: string
   itemId?: string
+  diagramLine?: DiagramLine
 }

@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import Konva from 'konva'
 import { SymbolDefinition } from '../symbols'
 import { useUIStore } from '../stores/useUIStore'
+import { DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
 
 interface Props {
   symbol: SymbolDefinition
@@ -15,7 +16,11 @@ export function SymbolPaletteItem({ symbol, color }: Props) {
   const toggleVisibility = useUIStore((s) => s.toggleSymbolVisibility)
   const showOnlySymbol = useUIStore((s) => s.showOnlySymbol)
   const hideOnlySymbol = useUIStore((s) => s.hideOnlySymbol)
+  const interactionMode = useUIStore((s) => s.interactionMode)
+  const setInteractionMode = useUIStore((s) => s.setInteractionMode)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const isDiagramLineTool = symbol.id === DIAGRAM_LINE_SYMBOL_ID
+  const isActiveTool = isDiagramLineTool && interactionMode === 'draw-line'
 
   useEffect(() => {
     if (!canvasRef.current || stageRef.current) return
@@ -132,6 +137,11 @@ export function SymbolPaletteItem({ symbol, color }: Props) {
     e.dataTransfer.effectAllowed = 'copy'
   }
 
+  const handleClick = () => {
+    if (!isDiagramLineTool) return
+    setInteractionMode(isActiveTool ? 'default' : 'draw-line')
+  }
+
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -140,10 +150,11 @@ export function SymbolPaletteItem({ symbol, color }: Props) {
 
   return (
     <div
-      className={`symbol-palette-item${hidden ? ' symbol-hidden' : ''}`}
-      draggable
-      onDragStart={handleDragStart}
-      title={symbol.name}
+      className={`symbol-palette-item${hidden ? ' symbol-hidden' : ''}${isActiveTool ? ' symbol-tool-active' : ''}`}
+      draggable={!isDiagramLineTool}
+      onDragStart={isDiagramLineTool ? undefined : handleDragStart}
+      onClick={handleClick}
+      title={isDiagramLineTool ? 'Klik en plaats een lijn met twee punten' : symbol.name}
     >
       <div ref={canvasRef} className="symbol-preview" />
       <span className="symbol-name">{symbol.name}</span>

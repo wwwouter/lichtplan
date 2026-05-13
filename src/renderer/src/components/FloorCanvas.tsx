@@ -11,6 +11,8 @@ import { SymbolNode } from './SymbolNode'
 import { SymbolInfoTooltip } from './SymbolInfoTooltip'
 import { SymbolQuestionMarker } from './SymbolQuestionMarker'
 import { computeSmartLabelLayout, type LabelLayoutItem } from './labelLayout'
+import type { PlacedSymbol } from '../types/project'
+import { createDiagramLineSymbol, DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -96,6 +98,7 @@ export function FloorCanvas({ stageRef }: Props) {
       e.preventDefault()
       const symbolId = e.dataTransfer.getData('symbolId')
       if (!symbolId || !stageRef.current) return
+      if (symbolId === DIAGRAM_LINE_SYMBOL_ID) return
 
       const container = containerRef.current
       if (!container) return
@@ -105,13 +108,15 @@ export function FloorCanvas({ stageRef }: Props) {
       const y = (e.clientY - rect.top - stageY) / scale
 
       const newId = uuidv4()
-      addSymbol(activeFloorId, {
+      const newSymbol: PlacedSymbol = {
         id: newId,
         symbolId,
         x,
         y,
         rotation: 0
-      })
+      }
+
+      addSymbol(activeFloorId, newSymbol)
 
       if (symbolId === 'tekst') {
         setLabelDialog({ symbolId: newId, currentLabel: '' })
@@ -125,10 +130,8 @@ export function FloorCanvas({ stageRef }: Props) {
   }, [])
 
   useEffect(() => {
-    if (interactionMode === 'default') {
-      setMeasureStart(null)
-      setMeasureResult(null)
-    }
+    setMeasureStart(null)
+    setMeasureResult(null)
   }, [interactionMode])
 
   const getCanvasPoint = useCallback(
@@ -147,7 +150,11 @@ export function FloorCanvas({ stageRef }: Props) {
 
   const handleStageClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (interactionMode === 'calibrate' || interactionMode === 'measure') {
+      if (
+        interactionMode === 'calibrate' ||
+        interactionMode === 'measure' ||
+        interactionMode === 'draw-line'
+      ) {
         const point = getCanvasPoint(e)
         if (!point) return
 
@@ -159,7 +166,13 @@ export function FloorCanvas({ stageRef }: Props) {
           const dy = point.y - measureStart.y
           const pixelDist = Math.sqrt(dx * dx + dy * dy)
 
-          if (interactionMode === 'calibrate') {
+          if (interactionMode === 'draw-line') {
+            const newId = uuidv4()
+            addSymbol(activeFloorId, createDiagramLineSymbol(newId, measureStart, point))
+            setSelectedSymbol(newId)
+            setInteractionMode('default')
+            setLabelDialog({ symbolId: newId, currentLabel: '' })
+          } else if (interactionMode === 'calibrate') {
             setCalibrationPixels(pixelDist)
             setMeasureStart(null)
           } else {
@@ -183,8 +196,12 @@ export function FloorCanvas({ stageRef }: Props) {
       interactionMode,
       measureStart,
       getCanvasPoint,
+      activeFloorId,
+      addSymbol,
       setCalibrationPixels,
       floor,
+      setInteractionMode,
+      setLabelDialog,
       setSelectedSymbol,
       setContextMenu
     ]
@@ -211,7 +228,9 @@ export function FloorCanvas({ stageRef }: Props) {
   }, [interactionMode, setInteractionMode])
 
   const cursorStyle =
-    interactionMode === 'calibrate' || interactionMode === 'measure' ? 'crosshair' : undefined
+    interactionMode === 'calibrate' || interactionMode === 'measure' || interactionMode === 'draw-line'
+      ? 'crosshair'
+      : undefined
 
   const smartLabelLayout = useMemo(() => {
     if (!floor) return new Map<string, { offsetX: number; offsetY: number; moved: boolean }>()

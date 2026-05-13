@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
 import { Project, Floor, PlacedSymbol, FloorPlanImage } from '../types/project'
+import { DIAGRAM_LINE_SYMBOL_ID } from '../components/diagramLine'
 
 const MAX_HISTORY = 50
 
@@ -80,6 +81,7 @@ function clearHistory(): void {
 
 function getMaxItemId(symbols: PlacedSymbol[]): number {
   return symbols.reduce((max, s) => {
+    if (s.symbolId === DIAGRAM_LINE_SYMBOL_ID) return max
     const n = parseInt(s.itemId ?? '', 10)
     return !isNaN(n) && n > max ? n : max
   }, 0)
@@ -97,12 +99,31 @@ function assignMissingItemIds(project: Project): Project {
       let curr = getMaxItemId(floor.symbols)
       return {
         ...floor,
-        symbols: floor.symbols.map((s) => ({
-          ...s,
-          itemId: s.itemId ?? String((curr += 1)).padStart(3, '0')
-        }))
+        symbols: floor.symbols.map((s) => {
+          if (s.symbolId === DIAGRAM_LINE_SYMBOL_ID) {
+            const { itemId: _itemId, ...lineSymbol } = s
+            return lineSymbol
+          }
+
+          return {
+            ...s,
+            itemId: s.itemId ?? String((curr += 1)).padStart(3, '0')
+          }
+        })
       }
     })
+  }
+}
+
+function enrichNewSymbol(symbol: PlacedSymbol, existingSymbols: PlacedSymbol[]): PlacedSymbol {
+  if (symbol.symbolId === DIAGRAM_LINE_SYMBOL_ID) {
+    const { itemId: _itemId, ...lineSymbol } = symbol
+    return lineSymbol
+  }
+
+  return {
+    ...symbol,
+    itemId: symbol.itemId ?? nextItemId(existingSymbols)
   }
 }
 
@@ -277,8 +298,7 @@ export const useProjectStore = create<ProjectState>((set, get) => {
     addSymbol: (floorId, symbol) =>
       setWithHistory((state) => {
         const floor = state.project.floors.find((f) => f.id === floorId)
-        const itemId = symbol.itemId ?? nextItemId(floor?.symbols ?? [])
-        const enriched = { ...symbol, itemId }
+        const enriched = enrichNewSymbol(symbol, floor?.symbols ?? [])
         return {
           project: {
             ...state.project,
@@ -332,14 +352,15 @@ export const useProjectStore = create<ProjectState>((set, get) => {
 
       const OFFSET = 30
       const newId = uuidv4()
-      const itemId = nextItemId(floor?.symbols ?? [])
+      const isLine = original.symbolId === DIAGRAM_LINE_SYMBOL_ID
       const duplicate: PlacedSymbol = {
         ...original,
         id: newId,
-        itemId,
+        itemId: isLine ? undefined : nextItemId(floor?.symbols ?? []),
         x: original.x + OFFSET,
         y: original.y + OFFSET
       }
+      if (isLine) delete duplicate.itemId
 
       setWithHistory((s) => ({
         project: {

@@ -7,6 +7,15 @@ import { SymbolRenderer } from './SymbolRenderer'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import { useUIStore } from '../stores/useUIStore'
+import { getSymbolLabelText } from './labelLayout'
+import {
+  DIAGRAM_LINE_SYMBOL_ID,
+  getDiagramLine,
+  getDiagramLineDash,
+  moveDiagramLineEnd,
+  moveDiagramLineStart,
+  type DiagramLinePoint
+} from './diagramLine'
 
 interface Props {
   symbol: PlacedSymbol
@@ -36,6 +45,7 @@ export function SymbolNode({
   const color = CATEGORY_COLORS[definition.category]
   const offsetX = definition.width / 2
   const offsetY = definition.height / 2
+  const isDiagramLine = definition.id === DIAGRAM_LINE_SYMBOL_ID
 
   useEffect(() => {
     if (groupRef.current && isSelected) {
@@ -61,6 +71,7 @@ export function SymbolNode({
       onMouseLeave={() => onHoverChange?.(null)}
       onDragStart={() => onHoverChange?.(null)}
       onDragEnd={(e) => {
+        if (e.target !== groupRef.current) return
         updateSymbol(floorId, symbol.id, {
           x: e.target.x(),
           y: e.target.y()
@@ -81,6 +92,15 @@ export function SymbolNode({
     >
       {definition.id === 'tekst' ? (
         <TextSymbol rotation={symbol.rotation} text={symbol.label} isSelected={isSelected} />
+      ) : isDiagramLine ? (
+        <DiagramLineSymbol
+          symbol={symbol}
+          floorId={floorId}
+          color={color}
+          isSelected={isSelected}
+          showLabel={showLabel}
+          updateSymbol={updateSymbol}
+        />
       ) : (
         <>
           <Group rotation={symbol.rotation}>
@@ -134,6 +154,189 @@ export function SymbolNode({
       )}
     </Group>
   )
+}
+
+function DiagramLineSymbol({
+  symbol,
+  floorId,
+  color,
+  isSelected,
+  showLabel,
+  updateSymbol
+}: {
+  symbol: PlacedSymbol
+  floorId: string
+  color: string
+  isSelected: boolean
+  showLabel: boolean
+  updateSymbol: (floorId: string, symbolId: string, updates: Partial<PlacedSymbol>) => void
+}) {
+  const line = getDiagramLine(symbol)
+  const [draftSegment, setDraftSegment] = useState<{
+    start: DiagramLinePoint
+    end: DiagramLinePoint
+  } | null>(null)
+  const segment = draftSegment ?? {
+    start: { x: 0, y: 0 },
+    end: { x: line.endX, y: line.endY }
+  }
+  const bounds = getSegmentBounds(segment.start, segment.end, 10)
+  const labelText = getSymbolLabelText({ label: symbol.label }, false, showLabel)
+  const labelCenter = getSegmentMidpoint(segment.start, segment.end)
+
+  const handleStartDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const point = { x: e.target.x(), y: e.target.y() }
+    updateSymbol(floorId, symbol.id, moveDiagramLineStart(symbol, line, point))
+    setDraftSegment(null)
+  }
+
+  const handleEndDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+    const point = { x: e.target.x(), y: e.target.y() }
+    updateSymbol(floorId, symbol.id, moveDiagramLineEnd(line, point))
+    setDraftSegment(null)
+  }
+
+  return (
+    <>
+      <Rect
+        x={bounds.x}
+        y={bounds.y}
+        width={bounds.width}
+        height={bounds.height}
+        fill="transparent"
+      />
+      <Line
+        points={[segment.start.x, segment.start.y, segment.end.x, segment.end.y]}
+        stroke={color}
+        strokeWidth={2}
+        dash={getDiagramLineDash(line)}
+        lineCap="round"
+        listening={false}
+      />
+      {labelText && <LineSymbolLabel text={labelText} x={labelCenter.x} y={labelCenter.y} />}
+      {isSelected && (
+        <>
+          <Rect
+            x={bounds.x}
+            y={bounds.y}
+            width={bounds.width}
+            height={bounds.height}
+            stroke="#3B82F6"
+            strokeWidth={1.5}
+            dash={[4, 3]}
+            listening={false}
+          />
+          <LineHandle
+            x={segment.start.x}
+            y={segment.start.y}
+            onDragMove={(point) =>
+              setDraftSegment({
+                start: point,
+                end: { x: line.endX, y: line.endY }
+              })
+            }
+            onDragEnd={handleStartDragEnd}
+          />
+          <LineHandle
+            x={segment.end.x}
+            y={segment.end.y}
+            onDragMove={(point) =>
+              setDraftSegment({
+                start: { x: 0, y: 0 },
+                end: point
+              })
+            }
+            onDragEnd={handleEndDragEnd}
+          />
+        </>
+      )}
+    </>
+  )
+}
+
+function LineHandle({
+  x,
+  y,
+  onDragMove,
+  onDragEnd
+}: {
+  x: number
+  y: number
+  onDragMove: (point: DiagramLinePoint) => void
+  onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void
+}) {
+  return (
+    <Circle
+      x={x}
+      y={y}
+      radius={5}
+      fill="#ffffff"
+      stroke="#3B82F6"
+      strokeWidth={2}
+      draggable
+      onDragMove={(e) => onDragMove({ x: e.target.x(), y: e.target.y() })}
+      onDragEnd={onDragEnd}
+    />
+  )
+}
+
+function LineSymbolLabel({ text, x, y }: { text: string; x: number; y: number }) {
+  const fontSize = 11
+  const lineHeight = 1
+  const padX = 3
+  const padY = 2
+  const lines = text.split('\n')
+  const longestLine = lines.reduce((max, line) => Math.max(max, line.length), 0)
+  const width = Math.max(24, Math.ceil(longestLine * fontSize * 0.62) + padX * 2)
+  const height = Math.max(lines.length, 1) * fontSize * lineHeight + padY * 2
+
+  return (
+    <Group x={x} y={y} listening={false}>
+      <Rect
+        x={-width / 2}
+        y={-height / 2}
+        width={width}
+        height={height}
+        fill="#ffffff"
+        stroke="#000000"
+        strokeWidth={1}
+        listening={false}
+      />
+      <Text
+        x={-width / 2 + padX}
+        y={-height / 2 + padY}
+        text={text}
+        width={width - padX * 2}
+        fontSize={fontSize}
+        lineHeight={lineHeight}
+        fill="#111827"
+        align="center"
+        wrap="none"
+        listening={false}
+      />
+    </Group>
+  )
+}
+
+function getSegmentMidpoint(start: DiagramLinePoint, end: DiagramLinePoint): DiagramLinePoint {
+  return {
+    x: (start.x + end.x) / 2,
+    y: (start.y + end.y) / 2
+  }
+}
+
+function getSegmentBounds(start: DiagramLinePoint, end: DiagramLinePoint, padding: number) {
+  const minX = Math.min(start.x, end.x)
+  const minY = Math.min(start.y, end.y)
+  const maxX = Math.max(start.x, end.x)
+  const maxY = Math.max(start.y, end.y)
+
+  return {
+    x: minX - padding,
+    y: minY - padding,
+    width: Math.max(maxX - minX + padding * 2, padding * 2),
+    height: Math.max(maxY - minY + padding * 2, padding * 2)
+  }
 }
 
 function TextSymbol({

@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import { useUIStore } from '../stores/useUIStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
+import type { DiagramLineType } from '../types/project'
+import { DEFAULT_DIAGRAM_LINE, DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
 
 export function ContextMenu() {
   const { contextMenu, setContextMenu } = useUIStore()
@@ -32,6 +34,7 @@ export function ContextMenu() {
   const floor = getActiveFloor()
   const symbol = floor?.symbols.find((s) => s.id === contextMenu.symbolId)
   const isTextSymbol = symbol?.symbolId === 'tekst'
+  const isDiagramLine = symbol?.symbolId === DIAGRAM_LINE_SYMBOL_ID
   const hasLabel = Boolean(symbol?.label && symbol.label.length > 0)
   const hasGroup = Boolean(symbol?.group && symbol.group.length > 0)
   const hasLocation = Boolean(symbol?.location && symbol.location.length > 0)
@@ -102,6 +105,17 @@ export function ContextMenu() {
     setContextMenu(null)
   }
 
+  const handleSetLineType = (type: DiagramLineType) => {
+    if (!symbol) return
+    updateSymbol(activeFloorId, contextMenu.symbolId, {
+      diagramLine: {
+        ...(symbol.diagramLine ?? DEFAULT_DIAGRAM_LINE),
+        type
+      }
+    })
+    setContextMenu(null)
+  }
+
   return (
     <div
       ref={menuRef}
@@ -109,7 +123,7 @@ export function ContextMenu() {
       style={{ left: contextMenu.x, top: contextMenu.y }}
       onClick={(e) => e.stopPropagation()}
     >
-      {!isTextSymbol && (
+      {!isTextSymbol && !isDiagramLine && (
         <>
           <button className="context-menu-item" onClick={() => handleRotate(90)}>
             Roteer 90°
@@ -139,6 +153,23 @@ export function ContextMenu() {
       <button className="context-menu-item" onClick={handleOpenQuestionDialog}>
         {hasQuestion ? 'Vraag bewerken' : 'Vraag toevoegen'}
       </button>
+      {isDiagramLine && (
+        <>
+          <div className="context-menu-separator" />
+          <button
+            className={`context-menu-item${symbol?.diagramLine?.type !== 'dotted' ? ' active' : ''}`}
+            onClick={() => handleSetLineType('straight')}
+          >
+            Doorgetrokken lijn
+          </button>
+          <button
+            className={`context-menu-item${symbol?.diagramLine?.type === 'dotted' ? ' active' : ''}`}
+            onClick={() => handleSetLineType('dotted')}
+          >
+            Gestippelde lijn
+          </button>
+        </>
+      )}
       <button
         className="context-menu-item"
         onClick={() => {
