@@ -1,6 +1,6 @@
 # lichtplan
 
-An Electron application with React and TypeScript
+A web-based lighting plan editor built with React and TypeScript.
 
 ## Recommended IDE Setup
 
@@ -23,12 +23,5 @@ $ npm run dev
 ### Build
 
 ```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
+$ npm run build
 ```

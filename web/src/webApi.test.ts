@@ -1,43 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { downloadBlob, downloadDataUrl, pickFile, saveBlob } from './webApi'
 
-type TestSaveFilePicker = (options: {
-  suggestedName: string
-  types: Array<{
-    description: string
-    accept: Record<string, string[]>
-  }>
-}) => Promise<{
-  name?: string
-  createWritable: () => Promise<{
-    write: (data: Blob) => Promise<void>
-    close: () => Promise<void>
-  }>
-}>
-
-type TestOpenFilePicker = (options: {
-  multiple?: boolean
-  types: Array<{
-    description: string
-    accept: Record<string, string[]>
-  }>
-}) => Promise<
-  Array<{
-    name?: string
-    getFile: () => Promise<File>
-    createWritable: () => Promise<{
-      write: (data: Blob) => Promise<void>
-      close: () => Promise<void>
-    }>
-  }>
->
-
-const projectFileTypes = [
-  {
-    description: 'Lichtplan project',
-    accept: { 'application/json': ['.lichtplan'] }
-  }
-]
+function chooseFile(input: HTMLInputElement, file: File): void {
+  Object.defineProperty(input, 'files', {
+    configurable: true,
+    value: [file]
+  })
+  input.dispatchEvent(new Event('change'))
+}
 
 describe('web download helpers', () => {
   beforeEach(() => {
@@ -87,107 +57,106 @@ describe('web download helpers', () => {
     expect(document.body.querySelector('a[download="export.png"]')).toBeNull()
   })
 
-  it('fails instead of falling back when the browser save picker is unavailable', async () => {
+  it('saves project files through the browser download path even when the save picker exists', async () => {
+    const showSaveFilePicker = vi.fn().mockRejectedValue(new Error('showSaveFilePicker should not be used'))
+    ;(window as Window & { showSaveFilePicker?: unknown }).showSaveFilePicker = showSaveFilePicker
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:lichtplan')
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:lichtplan')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-
-    await expect(saveBlob(new Blob(['{}'], { type: 'application/json' }), 'project.lichtplan')).rejects.toThrow(
-      'Deze browser ondersteunt opslaan naar een gekozen bestand niet'
-    )
-
-    expect(click).not.toHaveBeenCalled()
-    expect(document.body.querySelector('a[download="project.lichtplan"]')).toBeNull()
-  })
-
-  it('uses the browser save picker when it is available', async () => {
-    const write = vi.fn().mockResolvedValue(undefined)
-    const close = vi.fn().mockResolvedValue(undefined)
-    const createWritable = vi.fn().mockResolvedValue({ write, close })
-    const showSaveFilePicker = vi.fn().mockResolvedValue({ name: 'woning.lichtplan', createWritable })
-    ;(window as Window & { showSaveFilePicker?: TestSaveFilePicker }).showSaveFilePicker = showSaveFilePicker
-    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
     const blob = new Blob(['{}'], { type: 'application/json' })
 
-    await expect(saveBlob(blob, 'project.lichtplan')).resolves.toBe('woning.lichtplan')
+    await expect(saveBlob(blob, 'project.lichtplan')).resolves.toBe('project.lichtplan')
 
-    expect(showSaveFilePicker).toHaveBeenCalledWith({
-      suggestedName: 'project.lichtplan',
-      types: projectFileTypes
-    })
-    expect(write).toHaveBeenCalledWith(blob)
-    expect(close).toHaveBeenCalledTimes(1)
-    expect(click).not.toHaveBeenCalled()
+    const link = document.body.querySelector<HTMLAnchorElement>('a[download="project.lichtplan"]')
+    expect(link).not.toBeNull()
+    expect(link?.href).toBe('blob:lichtplan')
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(createObjectURL).toHaveBeenCalledWith(blob)
+    expect(showSaveFilePicker).not.toHaveBeenCalled()
   })
 
-  it('treats cancelling the browser save picker as a cancelled save', async () => {
-    const showSaveFilePicker = vi.fn().mockRejectedValue(new DOMException('Cancelled', 'AbortError'))
-    ;(window as Window & { showSaveFilePicker?: TestSaveFilePicker }).showSaveFilePicker = showSaveFilePicker
+  it('saves project files through the same download path when no save picker exists', async () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:lichtplan')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const blob = new Blob(['{}'], { type: 'application/json' })
 
-    await expect(saveBlob(new Blob(['{}'], { type: 'application/json' }), 'project.lichtplan')).resolves.toBeNull()
+    await expect(saveBlob(blob, 'project.lichtplan')).resolves.toBe('project.lichtplan')
+
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(createObjectURL).toHaveBeenCalledWith(blob)
+    expect(document.body.querySelector<HTMLAnchorElement>('a[download="project.lichtplan"]')).not.toBeNull()
   })
 
-  it('shows a friendly save error when writing to the picked file is blocked', async () => {
-    const pickerError = new Error('The request is blocked by the browser')
-    pickerError.name = 'NotAllowedError'
-    pickerError.stack = 'NotAllowedError: The request is blocked by the browser\n    at createWritable'
-    const createWritable = vi.fn().mockRejectedValue(pickerError)
-    const showSaveFilePicker = vi.fn().mockResolvedValue({ name: 'woning.lichtplan', createWritable })
-    ;(window as Window & { showSaveFilePicker?: TestSaveFilePicker }).showSaveFilePicker = showSaveFilePicker
-    const result = saveBlob(new Blob(['{}'], { type: 'application/json' }), 'project.lichtplan')
-
-    await expect(result).rejects.toThrow('Opslaan naar de gekozen map is mislukt')
-    await expect(result).rejects.toThrow('NotAllowedError: The request is blocked by the browser')
-  })
-
-  it('uses the browser open picker for project files', async () => {
-    const file = new File(['{"name":"Woning"}'], 'woning.lichtplan', { type: 'application/json' })
-    const getFile = vi.fn().mockResolvedValue(file)
-    const showOpenFilePicker = vi.fn().mockResolvedValue([
-      {
-        name: 'woning.lichtplan',
-        getFile,
-        createWritable: vi.fn()
-      }
-    ])
-    ;(window as Window & { showOpenFilePicker?: TestOpenFilePicker }).showOpenFilePicker = showOpenFilePicker
-
-    await expect(pickFile(projectFileTypes)).resolves.toEqual({
-      file,
-      handle: expect.objectContaining({ name: 'woning.lichtplan' })
-    })
-
-    expect(showOpenFilePicker).toHaveBeenCalledWith({ multiple: false, types: projectFileTypes })
-    expect(getFile).toHaveBeenCalledTimes(1)
-  })
-
-  it('fails instead of falling back when the browser open picker is unavailable', async () => {
+  it('uses a file input for opening project files, even when showOpenFilePicker exists', async () => {
+    const showOpenFilePicker = vi.fn().mockRejectedValue(new Error('getFile is blocked'))
+    ;(window as Window & { showOpenFilePicker?: unknown }).showOpenFilePicker = showOpenFilePicker
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+    const file = new File(['{"name":"Woning"}'], 'woning.lichtplan', { type: 'application/json' })
+    const result = pickFile('.lichtplan')
+    const input = document.body.querySelector<HTMLInputElement>('input[type="file"]')
 
-    await expect(pickFile(projectFileTypes)).rejects.toThrow(
-      'Deze browser ondersteunt openen via een gekozen bestand niet'
-    )
+    expect(input).not.toBeNull()
+    expect(input?.accept).toBe('.lichtplan')
+    expect(click).toHaveBeenCalledTimes(1)
 
+    chooseFile(input!, file)
+
+    await expect(result).resolves.toBe(file)
+    expect(showOpenFilePicker).not.toHaveBeenCalled()
     expect(document.body.querySelector('input[type="file"]')).toBeNull()
-    expect(click).not.toHaveBeenCalled()
   })
 
-  it('treats cancelling the browser open picker as a cancelled open', async () => {
-    const showOpenFilePicker = vi.fn().mockRejectedValue(new DOMException('Cancelled', 'AbortError'))
-    ;(window as Window & { showOpenFilePicker?: TestOpenFilePicker }).showOpenFilePicker = showOpenFilePicker
+  it('treats cancelling the file input as a cancelled open', async () => {
+    const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+    const result = pickFile('.lichtplan')
 
-    await expect(pickFile(projectFileTypes)).resolves.toBeNull()
+    expect(document.body.querySelector<HTMLInputElement>('input[type="file"]')).not.toBeNull()
+    expect(click).toHaveBeenCalledTimes(1)
+
+    window.dispatchEvent(new Event('focus'))
+    vi.runAllTimers()
+
+    await expect(result).resolves.toBeNull()
+    expect(document.body.querySelector('input[type="file"]')).toBeNull()
   })
 
-  it('keeps the full browser error when opening a picked file fails', async () => {
-    const pickerError = new Error('The file handle cannot be read')
-    pickerError.name = 'NotAllowedError'
-    pickerError.stack = 'NotAllowedError: The file handle cannot be read\n    at getFile'
-    const showOpenFilePicker = vi.fn().mockRejectedValue(pickerError)
-    ;(window as Window & { showOpenFilePicker?: TestOpenFilePicker }).showOpenFilePicker = showOpenFilePicker
-    const result = pickFile(projectFileTypes)
+  it('opens projects from the selected file input file', async () => {
+    vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+    const file = new File(['{"name":"Woning"}'], 'woning.lichtplan', { type: 'application/json' })
+    Object.defineProperty(file, 'text', {
+      configurable: true,
+      value: vi.fn().mockResolvedValue('{"name":"Woning"}')
+    })
+    const result = window.api.openProject()
+    const input = document.body.querySelector<HTMLInputElement>('input[type="file"]')
+
+    expect(input).not.toBeNull()
+    chooseFile(input!, file)
+
+    await expect(result).resolves.toEqual({
+      filePath: 'woning.lichtplan',
+      data: '{"name":"Woning"}'
+    })
+  })
+
+  it('keeps the full file read error when opening a selected project file fails', async () => {
+    vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+    const readError = new Error('The selected file cannot be read')
+    readError.name = 'NotReadableError'
+    readError.stack = 'NotReadableError: The selected file cannot be read\n    at File.text'
+    const file = new File(['ignored'], 'kapot.lichtplan', { type: 'application/json' })
+    Object.defineProperty(file, 'text', {
+      configurable: true,
+      value: vi.fn().mockRejectedValue(readError)
+    })
+    const result = window.api.openProject()
+    const input = document.body.querySelector<HTMLInputElement>('input[type="file"]')
+
+    expect(input).not.toBeNull()
+    chooseFile(input!, file)
 
     await expect(result).rejects.toThrow('Openen van het gekozen bestand is mislukt')
-    await expect(result).rejects.toThrow('NotAllowedError: The file handle cannot be read')
+    await expect(result).rejects.toThrow('NotReadableError: The selected file cannot be read')
   })
 })

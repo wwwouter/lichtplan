@@ -9,70 +9,37 @@ interface LichtplanAPI {
   onMenuAction: (callback: (action: string) => void) => () => void
 }
 
-interface SaveFileHandle {
-  name?: string
-  createWritable: () => Promise<{
-    write: (data: Blob) => Promise<void>
-    close: () => Promise<void>
-  }>
-}
+export function pickFile(accept: string): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input')
+    let settled = false
 
-interface OpenFileHandle extends SaveFileHandle {
-  getFile: () => Promise<File>
-}
-
-type FilePickerType = {
-  description: string
-  accept: Record<string, string[]>
-}
-
-interface WindowWithFilePickers extends Window {
-  showSaveFilePicker?: (options: {
-    suggestedName: string
-    types: FilePickerType[]
-  }) => Promise<SaveFileHandle>
-  showOpenFilePicker?: (options: {
-    multiple?: boolean
-    types: FilePickerType[]
-  }) => Promise<OpenFileHandle[]>
-}
-
-interface PickedFile {
-  file: File
-  handle: OpenFileHandle
-}
-
-const PROJECT_FILE_TYPES: FilePickerType[] = [
-  {
-    description: 'Lichtplan project',
-    accept: { 'application/json': ['.lichtplan'] }
-  }
-]
-
-const IMAGE_FILE_TYPES: FilePickerType[] = [
-  {
-    description: 'Afbeeldingen',
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp']
+    const cleanup = () => {
+      window.removeEventListener('focus', handleFocus)
+      input.remove()
     }
-  }
-]
+    const finish = (file: File | null) => {
+      if (settled) return
+      settled = true
+      cleanup()
+      resolve(file)
+    }
+    const handleFocus = () => {
+      window.setTimeout(() => {
+        if (!input.files?.length) finish(null)
+      }, 300)
+    }
 
-export async function pickFile(types: FilePickerType[]): Promise<PickedFile | null> {
-  const openFilePicker = (window as WindowWithFilePickers).showOpenFilePicker
-  if (!openFilePicker) {
-    throw new Error('Deze browser ondersteunt openen via een gekozen bestand niet.')
-  }
-
-  try {
-    const [handle] = await openFilePicker({ multiple: false, types })
-    if (!handle) return null
-    const file = await handle.getFile()
-    return { file, handle }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return null
-    throw new Error(buildFullErrorMessage('Openen van het gekozen bestand is mislukt.', error))
-  }
+    input.type = 'file'
+    input.accept = accept
+    input.style.display = 'none'
+    input.addEventListener('change', () => {
+      finish(input.files?.[0] ?? null)
+    })
+    window.addEventListener('focus', handleFocus, { once: true })
+    document.body.appendChild(input)
+    input.click()
+  })
 }
 
 export function downloadBlob(blob: Blob, fileName: string): void {
@@ -101,24 +68,8 @@ export function downloadDataUrl(dataUrl: string, fileName: string): void {
 }
 
 export async function saveBlob(blob: Blob, fileName: string): Promise<string | null> {
-  const saveFilePicker = (window as WindowWithFilePickers).showSaveFilePicker
-  if (!saveFilePicker) {
-    throw new Error('Deze browser ondersteunt opslaan naar een gekozen bestand niet.')
-  }
-
-  try {
-    const handle = await saveFilePicker({
-      suggestedName: fileName,
-      types: PROJECT_FILE_TYPES
-    })
-    const writable = await handle.createWritable()
-    await writable.write(blob)
-    await writable.close()
-    return handle.name ?? fileName
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return null
-    throw new Error(buildFullErrorMessage('Opslaan naar de gekozen map is mislukt.', error))
-  }
+  downloadBlob(blob, fileName)
+  return fileName
 }
 
 function buildFullErrorMessage(summary: string, error: unknown): string {
@@ -126,6 +77,10 @@ function buildFullErrorMessage(summary: string, error: unknown): string {
 }
 
 function formatUnknownError(error: unknown): string {
+  if (error instanceof DOMException) {
+    return `${error.name}: ${error.message}`
+  }
+
   if (error instanceof Error) {
     const cause = (error as Error & { cause?: unknown }).cause
     const stackOrMessage = error.stack?.trim() || `${error.name}: ${error.message}`
@@ -146,10 +101,14 @@ function formatUnknownError(error: unknown): string {
 
 const webApi: LichtplanAPI = {
   async openProject() {
-    const picked = await pickFile(PROJECT_FILE_TYPES)
-    if (!picked) return null
-    const data = await picked.file.text()
-    return { filePath: picked.handle.name ?? picked.file.name, data }
+    const file = await pickFile('.lichtplan')
+    if (!file) return null
+    try {
+      const data = await file.text()
+      return { filePath: file.name, data }
+    } catch (error) {
+      throw new Error(buildFullErrorMessage('Openen van het gekozen bestand is mislukt.', error))
+    }
   },
 
   async saveProject(data: string, _filePath?: string) {
@@ -163,9 +122,8 @@ const webApi: LichtplanAPI = {
   },
 
   async openImage() {
-    const picked = await pickFile(IMAGE_FILE_TYPES)
-    if (!picked) return null
-    const { file } = picked
+    const file = await pickFile('image/*')
+    if (!file) return null
     return new Promise((resolve) => {
       const reader = new FileReader()
       reader.onload = () => resolve({ data: reader.result as string, fileName: file.name })
