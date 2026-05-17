@@ -3,19 +3,22 @@ import { lightingSymbols } from './lighting'
 import { electricalSymbols } from './electrical'
 import { switchSymbols } from './switches'
 import { otherSymbols } from './other'
+import { annotationSymbols } from './annotations'
 
 export const ALL_SYMBOLS: SymbolDefinition[] = [
   ...lightingSymbols,
   ...electricalSymbols,
   ...switchSymbols,
-  ...otherSymbols
+  ...otherSymbols,
+  ...annotationSymbols
 ]
 
 export const SYMBOLS_BY_CATEGORY: Record<SymbolCategory, SymbolDefinition[]> = {
   [SymbolCategory.Verlichting]: lightingSymbols,
   [SymbolCategory.Elektra]: electricalSymbols,
   [SymbolCategory.Schakelaars]: switchSymbols,
-  [SymbolCategory.Overig]: otherSymbols
+  [SymbolCategory.Overig]: otherSymbols,
+  [SymbolCategory.Annotaties]: annotationSymbols
 }
 
 export const getSymbolById = (id: string): SymbolDefinition | undefined =>

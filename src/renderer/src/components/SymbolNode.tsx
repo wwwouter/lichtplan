@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect, useState } from 'react'
+import { useRef, useLayoutEffect, useState } from 'react'
 import { Group, Text, Rect, Circle, Line } from 'react-konva'
 import Konva from 'konva'
 import { PlacedSymbol } from '../types/project'
@@ -21,6 +21,7 @@ import {
   moveDiagramLineStart,
   type DiagramLinePoint
 } from './diagramLine'
+import { TEXT_SYMBOL_ID } from './symbolVisibility'
 
 interface Props {
   symbol: PlacedSymbol
@@ -55,12 +56,6 @@ export function SymbolNode({
   const iconBounds = getPlacedSymbolBounds(definition)
   const isDiagramLine = definition.id === DIAGRAM_LINE_SYMBOL_ID
   const labelText = getSymbolLabelText(symbol, showItemId, showLabel)
-
-  useEffect(() => {
-    if (groupRef.current && isSelected) {
-      groupRef.current.moveToTop()
-    }
-  }, [isSelected])
 
   return (
     <Group
@@ -99,7 +94,7 @@ export function SymbolNode({
         }
       }}
     >
-      {definition.id === 'tekst' ? (
+      {definition.id === TEXT_SYMBOL_ID ? (
         <TextSymbol
           rotation={symbol.rotation}
           text={symbol.label}
@@ -218,20 +213,13 @@ function DiagramLineSymbol({
 
   return (
     <>
-      <Rect
-        x={bounds.x}
-        y={bounds.y}
-        width={bounds.width}
-        height={bounds.height}
-        fill="transparent"
-      />
       <Line
         points={[segment.start.x, segment.start.y, segment.end.x, segment.end.y]}
         stroke={color}
         strokeWidth={2}
+        hitStrokeWidth={12}
         dash={getDiagramLineDash(line)}
         lineCap="round"
-        listening={false}
       />
       {labelText && (
         <LineSymbolLabel text={labelText} x={labelCenter.x} y={labelCenter.y} scale={detailScale} />

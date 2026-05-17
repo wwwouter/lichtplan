@@ -35,6 +35,11 @@ interface QuestionDialogState {
   currentQuestion: string
 }
 
+interface ForTypeDialogState {
+  symbolId: string
+  currentForSymbolId?: string
+}
+
 interface IdDialogState {
   symbolId: string
   currentId: string
@@ -56,6 +61,7 @@ interface UIState {
   idDialog: IdDialogState | null
   descriptionDialog: DescriptionDialogState | null
   questionDialog: QuestionDialogState | null
+  forTypeDialog: ForTypeDialogState | null
   itemsListOpen: boolean
   pdfExportDialogOpen: boolean
   expandedCategories: Record<string, boolean>
@@ -76,6 +82,7 @@ interface UIState {
   setIdDialog: (dialog: IdDialogState | null) => void
   setDescriptionDialog: (dialog: DescriptionDialogState | null) => void
   setQuestionDialog: (dialog: QuestionDialogState | null) => void
+  setForTypeDialog: (dialog: ForTypeDialogState | null) => void
   setItemsListOpen: (open: boolean) => void
   setPdfExportDialogOpen: (open: boolean) => void
   toggleCategory: (category: string) => void
@@ -93,11 +100,22 @@ interface UIState {
 }
 
 const knownSymbolIds = new Set(ALL_SYMBOLS.map((symbol) => symbol.id))
+const annotationSymbolIds = new Set(['tekst', 'lijn'])
 const defaultPreferences: PersistedUIPreferences = {
   showItemId: true,
   showGroup: true,
   showLabel: true,
   hiddenSymbolIds: []
+}
+
+function isAnnotationSymbolId(symbolId: string): boolean {
+  return annotationSymbolIds.has(symbolId)
+}
+
+function addHiddenAnnotations(next: Set<string>, hiddenSymbolIds: Set<string>): void {
+  annotationSymbolIds.forEach((symbolId) => {
+    if (hiddenSymbolIds.has(symbolId)) next.add(symbolId)
+  })
 }
 
 function readUIPreferences(): PersistedUIPreferences {
@@ -164,13 +182,15 @@ export const useUIStore = create<UIState>((set) => ({
   idDialog: null,
   descriptionDialog: null,
   questionDialog: null,
+  forTypeDialog: null,
   itemsListOpen: false,
   pdfExportDialogOpen: false,
   expandedCategories: {
     Verlichting: true,
     Elektra: true,
     Schakelaars: true,
-    Overig: true
+    Overig: true,
+    Annotaties: true
   },
   hiddenSymbolIds: new Set(initialPreferences.hiddenSymbolIds),
   showItemId: initialPreferences.showItemId,
@@ -196,6 +216,8 @@ export const useUIStore = create<UIState>((set) => ({
   setDescriptionDialog: (dialog) => set({ descriptionDialog: dialog }),
 
   setQuestionDialog: (dialog) => set({ questionDialog: dialog }),
+
+  setForTypeDialog: (dialog) => set({ forTypeDialog: dialog }),
 
   setItemsListOpen: (open) => set({ itemsListOpen: open }),
 
@@ -256,8 +278,13 @@ export const useUIStore = create<UIState>((set) => ({
     set((state) => {
       const next = new Set<string>()
       ALL_SYMBOLS.forEach((s) => {
-        if (s.id !== symbolId) next.add(s.id)
+        if (s.id === symbolId) return
+        if (!isAnnotationSymbolId(symbolId) && isAnnotationSymbolId(s.id)) return
+        next.add(s.id)
       })
+      if (!isAnnotationSymbolId(symbolId)) {
+        addHiddenAnnotations(next, state.hiddenSymbolIds)
+      }
       persistVisibilityPreferences(state, { hiddenSymbolIds: Array.from(next) })
       return { hiddenSymbolIds: next }
     }),
@@ -265,6 +292,9 @@ export const useUIStore = create<UIState>((set) => ({
   hideOnlySymbol: (symbolId) =>
     set((state) => {
       const next = new Set<string>([symbolId])
+      if (!isAnnotationSymbolId(symbolId)) {
+        addHiddenAnnotations(next, state.hiddenSymbolIds)
+      }
       persistVisibilityPreferences(state, { hiddenSymbolIds: Array.from(next) })
       return { hiddenSymbolIds: next }
     })

@@ -42,5 +42,6 @@ export interface PlacedSymbol {
   description?: string
   question?: string
   itemId?: string
+  forSymbolId?: string
   diagramLine?: DiagramLine
 }

@@ -2,6 +2,8 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useProjectStore } from '../stores/useProjectStore'
 import { getSymbolById } from '../symbols'
 import { useUIStore } from '../stores/useUIStore'
+import { DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
+import { TEXT_SYMBOL_ID } from './symbolVisibility'
 
 type SortDir = 'asc' | 'desc'
 interface SortEntry { key: string; dir: SortDir }
@@ -35,7 +37,12 @@ export function ItemsListPopup() {
   const items = useMemo(() => {
     if (!floor) return []
     return floor.symbols
-      .filter((s) => s.symbolId !== 'tekst' && s.symbolId !== 'persoon')
+      .filter(
+        (s) =>
+          s.symbolId !== TEXT_SYMBOL_ID &&
+          s.symbolId !== DIAGRAM_LINE_SYMBOL_ID &&
+          s.symbolId !== 'persoon'
+      )
       .map((s) => {
         const def = getSymbolById(s.symbolId)
         return {

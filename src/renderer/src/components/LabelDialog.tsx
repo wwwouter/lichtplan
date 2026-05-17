@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useUIStore } from '../stores/useUIStore'
 import { useProjectStore } from '../stores/useProjectStore'
+import { TEXT_SYMBOL_ID } from './symbolVisibility'
 
 export function LabelDialog() {
   const { labelDialog, setLabelDialog } = useUIStore()
@@ -15,7 +16,7 @@ export function LabelDialog() {
   const symbol = labelDialog
     ? floor?.symbols.find((s) => s.id === labelDialog.symbolId)
     : undefined
-  const isTextSymbol = symbol?.symbolId === 'tekst'
+  const isTextSymbol = symbol?.symbolId === TEXT_SYMBOL_ID
 
   useEffect(() => {
     if (labelDialog) {

@@ -13,6 +13,7 @@ import { useUIStore } from '../stores/useUIStore'
 import { CATEGORY_COLORS, getSymbolById, SymbolCategory } from '../symbols'
 import type { Floor } from '../types/project'
 import { PdfExportDialog } from './PdfExportDialog'
+import { isPlacedSymbolVisible } from './symbolVisibility'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -54,7 +55,9 @@ export function Toolbar({ stageRef }: Props) {
   const handleZoomToFit = () => {
     if (!stageRef.current || !activeFloor) return
     const image = activeFloor.floorPlanImage
-    const symbols = activeFloor.symbols
+    const symbols = activeFloor.symbols.filter((symbol) =>
+      isPlacedSymbolVisible(symbol, hiddenSymbolIds)
+    )
     if (!image && symbols.length === 0) return
 
     const SYMBOL_MARGIN = 30
@@ -116,7 +119,7 @@ export function Toolbar({ stageRef }: Props) {
         setActiveFloor(floor.id)
         setSelectedSymbol(null)
         await waitForStagePaint(stage)
-        zoomFloorToFit(stage, floor, zoomToFit)
+        zoomFloorToFit(stage, floor, hiddenSymbolIds, zoomToFit)
         await waitForStagePaint(stage)
 
         snapshots.push({
@@ -268,7 +271,10 @@ export function Toolbar({ stageRef }: Props) {
   )
 }
 
-function getFloorBounds(floor: Floor): { x: number; y: number; width: number; height: number } {
+function getFloorBounds(
+  floor: Floor,
+  hiddenSymbolIds: Set<string>
+): { x: number; y: number; width: number; height: number } {
   const margin = 40
   let minX = Infinity
   let minY = Infinity
@@ -283,6 +289,7 @@ function getFloorBounds(floor: Floor): { x: number; y: number; width: number; he
   }
 
   for (const symbol of floor.symbols) {
+    if (!isPlacedSymbolVisible(symbol, hiddenSymbolIds)) continue
     minX = Math.min(minX, symbol.x - margin)
     minY = Math.min(minY, symbol.y - margin)
     maxX = Math.max(maxX, symbol.x + margin)
@@ -304,13 +311,14 @@ function getFloorBounds(floor: Floor): { x: number; y: number; width: number; he
 function zoomFloorToFit(
   stage: Konva.Stage,
   floor: Floor,
+  hiddenSymbolIds: Set<string>,
   zoomToFit: (
     bounds: { x: number; y: number; width: number; height: number },
     viewportWidth: number,
     viewportHeight: number
   ) => void
 ): void {
-  const bounds = getFloorBounds(floor)
+  const bounds = getFloorBounds(floor, hiddenSymbolIds)
   const container = stage.container()
   zoomToFit(bounds, container.clientWidth, container.clientHeight)
 }
@@ -331,7 +339,7 @@ function buildLegendItems(floors: Floor[], hiddenSymbolIds: Set<string>): PdfLeg
 
   floors.forEach((floor) => {
     floor.symbols.forEach((symbol) => {
-      if (hiddenSymbolIds.has(symbol.symbolId)) return
+      if (!isPlacedSymbolVisible(symbol, hiddenSymbolIds)) return
       counts.set(symbol.symbolId, (counts.get(symbol.symbolId) ?? 0) + 1)
     })
   })

@@ -1,4 +1,5 @@
 import type { PlacedSymbol } from '../types/project'
+import { TEXT_SYMBOL_ID } from './symbolVisibility'
 
 const BASE_FONT_SIZE = 11
 const LINE_HEIGHT = 1
@@ -157,7 +158,7 @@ function prepareLabels(
   const labels = items
     .map((item) => {
       const text = getSymbolLabelText(item, showItemId, showLabel)
-      if (!text || item.symbolId === 'tekst') return null
+      if (!text || item.symbolId === TEXT_SYMBOL_ID) return null
       const metrics = getLabelMetrics(item.detailScale)
       const size = estimateLabelSize(text, item.width, metrics)
       const defaultTop = item.y + item.height / 2 + metrics.labelGap - metrics.padY

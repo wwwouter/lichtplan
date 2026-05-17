@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/lichtplan/icon.svg" />
+    <title>Save Test</title>
+    <style>
+      :root {
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #111827;
+        background: #f8fafc;
+      }
+
+      body {
+        margin: 0;
+        padding: 32px;
+      }
+
+      main {
+        max-width: 900px;
+        margin: 0 auto;
+        display: grid;
+        gap: 20px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+
+      section {
+        background: white;
+        border: 1px solid #d7dee8;
+        border-radius: 8px;
+        padding: 18px;
+      }
+
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button,
+      a.download-link {
+        appearance: none;
+        border: 1px solid #2563eb;
+        border-radius: 6px;
+        background: #2563eb;
+        color: white;
+        font: inherit;
+        font-weight: 700;
+        padding: 10px 14px;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      button.secondary,
+      a.download-link {
+        background: white;
+        color: #1d4ed8;
+      }
+
+      button:disabled {
+        border-color: #cbd5e1;
+        background: #e2e8f0;
+        color: #64748b;
+        cursor: not-allowed;
+      }
+
+      textarea,
+      pre {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 12px;
+        font: 14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      pre {
+        min-height: 160px;
+        overflow: auto;
+        white-space: pre-wrap;
+        background: #0f172a;
+        color: #dbeafe;
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: 190px 1fr;
+        gap: 8px 16px;
+        margin: 0;
+      }
+
+      dt {
+        font-weight: 700;
+      }
+
+      dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Save Test</h1>
+        <p>This page only tests browser saving. No React, no app state, no project code.</p>
+      </header>
+
+      <section>
+        <h2>Browser</h2>
+        <dl id="capabilities"></dl>
+      </section>
+
+      <section>
+        <h2>Content</h2>
+        <textarea id="content"></textarea>
+      </section>
+
+      <section>
+        <h2>Actions</h2>
+        <div class="buttons">
+          <button id="programmatic-download">Programmatic download</button>
+          <button id="create-link" class="secondary">Create visible download link</button>
+          <button id="save-picker" class="secondary">Save picker</button>
+          <button id="save-picker-empty" class="secondary">Save picker empty write</button>
+          <button id="save-picker-keep-existing" class="secondary">Save picker keep existing</button>
+          <button id="directory-picker" class="secondary">Directory picker write</button>
+          <button id="blob-window" class="secondary">Open blob window</button>
+          <button id="data-window" class="secondary">Open data window</button>
+          <button id="location-blob" class="secondary">Navigate to blob</button>
+          <a id="server-attachment" class="download-link" href="/lichtplan/server-download-test.txt">
+            Server attachment
+          </a>
+        </div>
+        <p id="link-target"></p>
+      </section>
+
+      <section>
+        <h2>Log</h2>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script>
+      const content = document.getElementById('content')
+      const logTarget = document.getElementById('log')
+      const linkTarget = document.getElementById('link-target')
+      const savePickerButton = document.getElementById('save-picker')
+      const savePickerEmptyButton = document.getElementById('save-picker-empty')
+      const savePickerKeepExistingButton = document.getElementById('save-picker-keep-existing')
+      const directoryPickerButton = document.getElementById('directory-picker')
+
+      const now = new Date()
+      const stamp = now.toISOString().replaceAll(':', '').replace(/\.\d{3}Z$/, 'Z')
+      const fileName = `codex-save-test-${stamp}.txt`
+
+      content.value = [
+        'Codex browser save test',
+        `Created: ${now.toISOString()}`,
+        `URL: ${location.href}`,
+        `User agent: ${navigator.userAgent}`
+      ].join('\n')
+
+      function getActivationDetail() {
+        const activation = navigator.userActivation
+        if (!activation) return 'navigator.userActivation: unavailable'
+        return `navigator.userActivation.isActive=${activation.isActive}, hasBeenActive=${activation.hasBeenActive}`
+      }
+
+      function log(message, detail) {
+        const line = `[${new Date().toLocaleTimeString()}] ${message}`
+        const activation = getActivationDetail()
+        const extra = detail ? `\n${detail}\n${activation}` : `\n${activation}`
+        logTarget.textContent = `${line}${extra}\n\n${logTarget.textContent}`
+      }
+
+      function formatError(error) {
+        if (error instanceof Error) {
+          return error.stack || `${error.name}: ${error.message}`
+        }
+        return String(error)
+      }
+
+      function makeBlob() {
+        return new Blob([content.value], { type: 'text/plain;charset=utf-8' })
+      }
+
+      function makeObjectUrl() {
+        return URL.createObjectURL(makeBlob())
+      }
+
+      function renderCapabilities() {
+        const values = {
+          URL: location.href,
+          'Secure context': String(window.isSecureContext),
+          'User agent': navigator.userAgent,
+          'showSaveFilePicker': String(typeof window.showSaveFilePicker === 'function'),
+          'showDirectoryPicker': String(typeof window.showDirectoryPicker === 'function'),
+          'download attribute': String('download' in HTMLAnchorElement.prototype)
+        }
+        document.getElementById('capabilities').innerHTML = Object.entries(values)
+          .map(([label, value]) => `<dt>${label}</dt><dd>${value}</dd>`)
+          .join('')
+
+        if (typeof window.showSaveFilePicker !== 'function') {
+          savePickerButton.disabled = true
+          savePickerEmptyButton.disabled = true
+          savePickerKeepExistingButton.disabled = true
+        }
+        if (typeof window.showDirectoryPicker !== 'function') {
+          directoryPickerButton.disabled = true
+        }
+      }
+
+      document.getElementById('programmatic-download').addEventListener('click', () => {
+        log('Programmatic download: click handler entered')
+        const url = makeObjectUrl()
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = fileName
+        anchor.style.display = 'none'
+        document.body.appendChild(anchor)
+        log('Programmatic download: dispatching anchor.click()', `File name: ${fileName}`)
+        anchor.click()
+        window.setTimeout(() => {
+          URL.revokeObjectURL(url)
+          anchor.remove()
+          log('Programmatic download: cleaned up object URL')
+        }, 5000)
+      })
+
+      document.getElementById('create-link').addEventListener('click', () => {
+        log('Visible download link: create handler entered')
+        const url = makeObjectUrl()
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = fileName
+        anchor.className = 'download-link'
+        anchor.textContent = `Click this link to save ${fileName}`
+        anchor.addEventListener('click', () => {
+          log('Visible download link clicked by user', `File name: ${fileName}`)
+          window.setTimeout(() => URL.revokeObjectURL(url), 10000)
+        })
+        linkTarget.replaceChildren(anchor)
+        log('Visible download link created', 'Click the generated link manually.')
+      })
+
+      async function logPermission(handle, label) {
+        if (typeof handle.queryPermission === 'function') {
+          const beforePermission = await handle.queryPermission({ mode: 'readwrite' })
+          log(`${label}: queryPermission before request`, beforePermission)
+        }
+        if (typeof handle.requestPermission === 'function') {
+          const requestedPermission = await handle.requestPermission({ mode: 'readwrite' })
+          log(`${label}: requestPermission result`, requestedPermission)
+        }
+        if (typeof handle.queryPermission === 'function') {
+          const afterPermission = await handle.queryPermission({ mode: 'readwrite' })
+          log(`${label}: queryPermission after request`, afterPermission)
+        }
+      }
+
+      async function runSavePicker(label, writableOptions, data) {
+        try {
+          log(`${label}: opening`)
+          const handle = await window.showSaveFilePicker({
+            suggestedName: fileName,
+            types: [
+              {
+                description: 'Text file',
+                accept: { 'text/plain': ['.txt'] }
+              }
+            ]
+          })
+          log(`${label}: handle returned`, `Handle name: ${handle.name || '(no name)'}`)
+          await logPermission(handle, label)
+          const writable =
+            writableOptions === undefined ? await handle.createWritable() : await handle.createWritable(writableOptions)
+          log(`${label}: writable stream created`)
+          await writable.write(data)
+          log(`${label}: write completed`)
+          await writable.close()
+          log(`${label}: close completed`, `Handle name: ${handle.name || '(no name)'}`)
+        } catch (error) {
+          log(`${label}: failed`, formatError(error))
+        }
+      }
+
+      savePickerButton.addEventListener('click', async () => {
+        await runSavePicker('Save picker default', undefined, makeBlob())
+      })
+
+      savePickerEmptyButton.addEventListener('click', async () => {
+        await runSavePicker('Save picker empty write', { keepExistingData: false }, '')
+      })
+
+      savePickerKeepExistingButton.addEventListener('click', async () => {
+        await runSavePicker('Save picker keep existing', { keepExistingData: true }, makeBlob())
+      })
+
+      directoryPickerButton.addEventListener('click', async () => {
+        try {
+          log('Directory picker: opening')
+          const directoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' })
+          log('Directory picker: handle returned', `Directory name: ${directoryHandle.name || '(no name)'}`)
+          await logPermission(directoryHandle, 'Directory picker')
+          const fileHandle = await directoryHandle.getFileHandle(fileName, { create: true })
+          log('Directory picker: file handle returned', `File name: ${fileHandle.name || '(no name)'}`)
+          await logPermission(fileHandle, 'Directory picker file')
+          const writable = await fileHandle.createWritable()
+          log('Directory picker: writable stream created')
+          await writable.write(makeBlob())
+          log('Directory picker: write completed')
+          await writable.close()
+          log('Directory picker: close completed', `File name: ${fileHandle.name || '(no name)'}`)
+        } catch (error) {
+          log('Directory picker: failed', formatError(error))
+        }
+      })
+
+      document.getElementById('blob-window').addEventListener('click', () => {
+        const url = makeObjectUrl()
+        const opened = window.open(url, '_blank', 'noopener')
+        log('Open blob window attempted', `URL: ${url}\nwindow.open returned: ${opened ? 'WindowProxy' : String(opened)}`)
+      })
+
+      document.getElementById('data-window').addEventListener('click', () => {
+        const dataUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(content.value)}`
+        const opened = window.open(dataUrl, '_blank', 'noopener')
+        log('Open data window attempted', `URL length: ${dataUrl.length}\nwindow.open returned: ${opened ? 'WindowProxy' : String(opened)}`)
+      })
+
+      document.getElementById('location-blob').addEventListener('click', () => {
+        const url = makeObjectUrl()
+        log('Navigating current page to blob URL', url)
+        window.location.href = url
+      })
+
+      document.getElementById('server-attachment').addEventListener('click', () => {
+        log('Server attachment link clicked', 'URL: /lichtplan/server-download-test.txt')
+      })
+
+      renderCapabilities()
+      log('Page ready', `Default file name: ${fileName}`)
+    </script>
+  </body>
+</html>

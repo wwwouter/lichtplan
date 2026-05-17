@@ -19,11 +19,11 @@ describe('diagram line symbol', () => {
     useProjectStore.getState().newProject()
   })
 
-  it('is available as an Overig palette symbol', () => {
+  it('is available as an Annotaties palette symbol', () => {
     const symbol = ALL_SYMBOLS.find((item) => item.id === DIAGRAM_LINE_SYMBOL_ID)
 
     expect(symbol?.name).toBe('Lijn')
-    expect(symbol?.category).toBe('Overig')
+    expect(symbol?.category).toBe('Annotaties')
   })
 
   it('falls back to a usable default line when old projects do not have line data', () => {

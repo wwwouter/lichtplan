@@ -61,6 +61,28 @@ describe('UI visibility preferences', () => {
     expect(persisted.hiddenSymbolIds.length).toBeGreaterThan(0)
   })
 
+  it('keeps Tekst and Lijn visibility separate when showing or hiding one icon type', async () => {
+    const { useUIStore, UI_PREFERENCES_STORAGE_KEY } = await import('../stores/useUIStore')
+
+    useUIStore.getState().toggleSymbolVisibility('tekst')
+    useUIStore.getState().showOnlySymbol('wandlamp')
+
+    const afterShowOnly = JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? '{}')
+    expect(afterShowOnly.hiddenSymbolIds).toContain('tekst')
+    expect(afterShowOnly.hiddenSymbolIds).not.toContain('lijn')
+    expect(afterShowOnly.hiddenSymbolIds).not.toContain('wandlamp')
+    expect(afterShowOnly.hiddenSymbolIds).toContain('lichtpunt-plafond')
+
+    useUIStore.getState().hideOnlySymbol('wandlamp')
+
+    expect(JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? '{}')).toEqual({
+      showItemId: true,
+      showGroup: true,
+      showLabel: true,
+      hiddenSymbolIds: ['wandlamp', 'tekst']
+    })
+  })
+
   it('clears transient loading state without changing persisted visibility preferences', async () => {
     const { clearTransientUIState, useUIStore } = await import('../stores/useUIStore')
 

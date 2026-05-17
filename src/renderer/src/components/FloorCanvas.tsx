@@ -13,7 +13,9 @@ import { SymbolQuestionMarker } from './SymbolQuestionMarker'
 import { computeSmartLabelLayout, type LabelLayoutItem } from './labelLayout'
 import type { PlacedSymbol } from '../types/project'
 import { createDiagramLineSymbol, DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
+import { orderSymbolsForCanvas } from './canvasSymbolOrder'
 import { getPlacedSymbolBounds, getPlacedSymbolDetailScale } from './symbolSizing'
+import { isPlacedSymbolVisible, TEXT_SYMBOL_ID } from './symbolVisibility'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -119,7 +121,7 @@ export function FloorCanvas({ stageRef }: Props) {
 
       addSymbol(activeFloorId, newSymbol)
 
-      if (symbolId === 'tekst') {
+      if (symbolId === TEXT_SYMBOL_ID) {
         setLabelDialog({ symbolId: newId, currentLabel: '' })
       }
     },
@@ -237,7 +239,7 @@ export function FloorCanvas({ stageRef }: Props) {
     if (!floor) return new Map<string, { offsetX: number; offsetY: number; moved: boolean }>()
 
     const layoutItems: LabelLayoutItem[] = floor.symbols.flatMap((sym) => {
-      if (hiddenSymbolIds.has(sym.symbolId)) return []
+      if (!isPlacedSymbolVisible(sym, hiddenSymbolIds)) return []
       const def = getSymbolById(sym.symbolId)
       if (!def) return []
       const bounds = getPlacedSymbolBounds(def)
@@ -264,7 +266,7 @@ export function FloorCanvas({ stageRef }: Props) {
   const hoveredSymbol = useMemo(() => {
     if (!floor || !hoveredSymbolId) return null
     const symbol = floor.symbols.find((sym) => sym.id === hoveredSymbolId)
-    if (!symbol || hiddenSymbolIds.has(symbol.symbolId)) return null
+    if (!symbol || !isPlacedSymbolVisible(symbol, hiddenSymbolIds)) return null
     const definition = getSymbolById(symbol.symbolId)
     if (!definition) return null
     return { symbol, definition }
@@ -308,8 +310,10 @@ export function FloorCanvas({ stageRef }: Props) {
       >
         <Layer listening={interactionMode === 'default'}>
           {floor.floorPlanImage && <FloorPlanImageLayer image={floor.floorPlanImage} />}
-          {floor.symbols.map((sym) => {
-            if (hiddenSymbolIds.has(sym.symbolId)) return null
+          {orderSymbolsForCanvas(
+            floor.symbols.filter((sym) => isPlacedSymbolVisible(sym, hiddenSymbolIds)),
+            selectedSymbolId
+          ).map((sym) => {
             const def = getSymbolById(sym.symbolId)
             if (!def) return null
             return (
@@ -389,7 +393,7 @@ export function FloorCanvas({ stageRef }: Props) {
         </Layer>
         <Layer listening={false}>
           {floor.symbols.map((sym) => {
-            if (!sym.question?.trim() || hiddenSymbolIds.has(sym.symbolId)) return null
+            if (!sym.question?.trim() || !isPlacedSymbolVisible(sym, hiddenSymbolIds)) return null
             const def = getSymbolById(sym.symbolId)
             if (!def) return null
             return <SymbolQuestionMarker key={sym.id} symbol={sym} definition={def} />

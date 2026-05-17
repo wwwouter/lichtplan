@@ -4,6 +4,7 @@ import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import type { DiagramLineType } from '../types/project'
 import { DEFAULT_DIAGRAM_LINE, DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
+import { TEXT_SYMBOL_ID } from './symbolVisibility'
 
 export function ContextMenu() {
   const { contextMenu, setContextMenu } = useUIStore()
@@ -22,6 +23,7 @@ export function ContextMenu() {
   const setIdDialog = useUIStore((s) => s.setIdDialog)
   const setDescriptionDialog = useUIStore((s) => s.setDescriptionDialog)
   const setQuestionDialog = useUIStore((s) => s.setQuestionDialog)
+  const setForTypeDialog = useUIStore((s) => s.setForTypeDialog)
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
@@ -33,8 +35,9 @@ export function ContextMenu() {
 
   const floor = getActiveFloor()
   const symbol = floor?.symbols.find((s) => s.id === contextMenu.symbolId)
-  const isTextSymbol = symbol?.symbolId === 'tekst'
+  const isTextSymbol = symbol?.symbolId === TEXT_SYMBOL_ID
   const isDiagramLine = symbol?.symbolId === DIAGRAM_LINE_SYMBOL_ID
+  const supportsForType = isTextSymbol || isDiagramLine
   const hasLabel = Boolean(symbol?.label && symbol.label.length > 0)
   const hasGroup = Boolean(symbol?.group && symbol.group.length > 0)
   const hasLocation = Boolean(symbol?.location && symbol.location.length > 0)
@@ -105,6 +108,14 @@ export function ContextMenu() {
     setContextMenu(null)
   }
 
+  const handleOpenForTypeDialog = () => {
+    setForTypeDialog({
+      symbolId: contextMenu.symbolId,
+      currentForSymbolId: symbol?.forSymbolId
+    })
+    setContextMenu(null)
+  }
+
   const handleSetLineType = (type: DiagramLineType) => {
     if (!symbol) return
     updateSymbol(activeFloorId, contextMenu.symbolId, {
@@ -136,6 +147,11 @@ export function ContextMenu() {
       <button className="context-menu-item" onClick={handleAddLabel}>
         {isTextSymbol ? 'Bewerken' : hasLabel ? 'Label bewerken' : 'Label toevoegen'}
       </button>
+      {supportsForType && (
+        <button className="context-menu-item" onClick={handleOpenForTypeDialog}>
+          {symbol?.forSymbolId ? 'Voor type bewerken' : 'Voor type instellen'}
+        </button>
+      )}
       <button className="context-menu-item" onClick={handleOpenGroupDialog}>
         {hasGroup ? 'Groep bewerken' : 'Groep toevoegen'}
       </button>

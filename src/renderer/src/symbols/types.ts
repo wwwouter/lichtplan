@@ -2,14 +2,16 @@ export enum SymbolCategory {
   Verlichting = 'Verlichting',
   Elektra = 'Elektra',
   Schakelaars = 'Schakelaars',
-  Overig = 'Overig'
+  Overig = 'Overig',
+  Annotaties = 'Annotaties'
 }
 
 export const CATEGORY_COLORS: Record<SymbolCategory, string> = {
   [SymbolCategory.Verlichting]: '#F59E0B',
   [SymbolCategory.Elektra]: '#3B82F6',
   [SymbolCategory.Schakelaars]: '#EF4444',
-  [SymbolCategory.Overig]: '#8B5CF6'
+  [SymbolCategory.Overig]: '#8B5CF6',
+  [SymbolCategory.Annotaties]: '#7C3AED'
 }
 
 export type SymbolShape =
