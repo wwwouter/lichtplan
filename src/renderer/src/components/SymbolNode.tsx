@@ -17,6 +17,7 @@ import {
   DIAGRAM_LINE_SYMBOL_ID,
   getDiagramLine,
   getDiagramLineDash,
+  getDiagramLineLabel,
   moveDiagramLineEnd,
   moveDiagramLineStart,
   type DiagramLinePoint
@@ -107,7 +108,6 @@ export function SymbolNode({
           floorId={floorId}
           color={color}
           isSelected={isSelected}
-          showLabel={showLabel}
           detailScale={detailScale}
           updateSymbol={updateSymbol}
         />
@@ -174,7 +174,6 @@ function DiagramLineSymbol({
   floorId,
   color,
   isSelected,
-  showLabel,
   detailScale,
   updateSymbol
 }: {
@@ -182,7 +181,6 @@ function DiagramLineSymbol({
   floorId: string
   color: string
   isSelected: boolean
-  showLabel: boolean
   detailScale: number
   updateSymbol: (floorId: string, symbolId: string, updates: Partial<PlacedSymbol>) => void
 }) {
@@ -196,7 +194,7 @@ function DiagramLineSymbol({
     end: { x: line.endX, y: line.endY }
   }
   const bounds = getSegmentBounds(segment.start, segment.end, 10)
-  const labelText = getSymbolLabelText({ label: symbol.label }, false, showLabel)
+  const labelText = getDiagramLineLabel(symbol)
   const labelCenter = getSegmentMidpoint(segment.start, segment.end)
 
   const handleStartDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {

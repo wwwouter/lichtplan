@@ -46,6 +46,15 @@ export function getDiagramLineDash(line: Pick<DiagramLine, 'type'>): number[] | 
   return line.type === 'dotted' ? [4, 5] : undefined
 }
 
+export function getDiagramLineLabel(symbol: Pick<PlacedSymbol, 'label'>): string | null {
+  const lines = symbol.label
+    ?.split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  return lines && lines.length > 0 ? lines.join('\n') : null
+}
+
 export function getDiagramLineMidpoint(line: Pick<DiagramLine, 'endX' | 'endY'>): DiagramLinePoint {
   return {
     x: line.endX / 2,

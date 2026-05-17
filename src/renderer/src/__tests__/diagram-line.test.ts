@@ -9,6 +9,7 @@ import {
   getDiagramLine,
   getDiagramLineBounds,
   getDiagramLineDash,
+  getDiagramLineLabel,
   getDiagramLineMidpoint,
   moveDiagramLineEnd,
   moveDiagramLineStart
@@ -107,6 +108,12 @@ describe('diagram line symbol', () => {
 
   it('places the label anchor in the middle of the line', () => {
     expect(getDiagramLineMidpoint({ endX: 160, endY: 40 })).toEqual({ x: 80, y: 20 })
+  })
+
+  it('uses the line label as annotation text independent of global label visibility', () => {
+    expect(getDiagramLineLabel({ label: '  leiding onder vloer  ' })).toBe('leiding onder vloer')
+    expect(getDiagramLineLabel({ label: 'boven\n\nkast' })).toBe('boven\nkast')
+    expect(getDiagramLineLabel({ label: '' })).toBeNull()
   })
 
   it('uses a dash pattern only for dotted lines', () => {
