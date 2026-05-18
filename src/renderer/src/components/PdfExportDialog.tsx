@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import type { Floor } from '../types/project'
-import type { PdfPageOrientation } from '../services/exportService'
+import {
+  PDF_DPI_OPTIONS,
+  PDF_PAPER_SIZES,
+  type PdfPageOrientation,
+  type PdfPaperSize,
+  type PdfResolutionDpi
+} from '../services/exportService'
 
 interface Props {
   floors: Floor[]
@@ -10,7 +16,9 @@ interface Props {
   onExport: (
     floorIds: string[],
     includeLegend: boolean,
-    pageOrientation: PdfPageOrientation
+    pageOrientation: PdfPageOrientation,
+    paperSize: PdfPaperSize,
+    dpi: PdfResolutionDpi
   ) => void
 }
 
@@ -18,6 +26,8 @@ export function PdfExportDialog({ floors, activeFloorId, isExporting, onCancel, 
   const [selectedFloorIds, setSelectedFloorIds] = useState<string[]>([activeFloorId])
   const [includeLegend, setIncludeLegend] = useState(false)
   const [pageOrientation, setPageOrientation] = useState<PdfPageOrientation>('best-fit')
+  const [paperSize, setPaperSize] = useState<PdfPaperSize>('a2')
+  const [dpi, setDpi] = useState<PdfResolutionDpi>(200)
 
   const toggleFloor = (floorId: string) => {
     setSelectedFloorIds((current) =>
@@ -103,6 +113,46 @@ export function PdfExportDialog({ floors, activeFloorId, isExporting, onCancel, 
           </div>
         </div>
 
+        <div className="pdf-export-section">
+          <div className="pdf-export-section-header">
+            <span>Printkwaliteit</span>
+          </div>
+
+          <div className="pdf-select-grid">
+            <label className="pdf-select-row">
+              <span>Papier</span>
+              <select
+                aria-label="Papierformaat"
+                value={paperSize}
+                onChange={(event) => setPaperSize(event.target.value as PdfPaperSize)}
+                disabled={isExporting}
+              >
+                {Object.entries(PDF_PAPER_SIZES).map(([value, size]) => (
+                  <option key={value} value={value}>
+                    {size.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="pdf-select-row">
+              <span>DPI</span>
+              <select
+                aria-label="Resolutie"
+                value={dpi}
+                onChange={(event) => setDpi(Number(event.target.value) as PdfResolutionDpi)}
+                disabled={isExporting}
+              >
+                {PDF_DPI_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+
         <label className="pdf-option-row">
           <input
             type="checkbox"
@@ -119,7 +169,7 @@ export function PdfExportDialog({ floors, activeFloorId, isExporting, onCancel, 
           </button>
           <button
             className="dialog-btn primary"
-            onClick={() => onExport(selectedFloorIds, includeLegend, pageOrientation)}
+            onClick={() => onExport(selectedFloorIds, includeLegend, pageOrientation, paperSize, dpi)}
             disabled={selectedFloorIds.length === 0 || isExporting}
           >
             {isExporting ? 'Exporteren...' : 'Exporteren'}

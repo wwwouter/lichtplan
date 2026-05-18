@@ -30,6 +30,18 @@ export const PDF_FLOOR_IMAGE_OPTIONS = {
   quality: 0.94
 }
 
+export const PDF_PAPER_SIZES = {
+  a4: { label: 'A4', widthMm: 210, heightMm: 297 },
+  a3: { label: 'A3', widthMm: 297, heightMm: 420 },
+  a2: { label: 'A2', widthMm: 420, heightMm: 594 },
+  a1: { label: 'A1', widthMm: 594, heightMm: 841 }
+} as const
+
+export const PDF_DPI_OPTIONS = [150, 200, 300] as const
+
+const PDF_PAGE_MARGIN_MM = 15
+const PDF_HEADER_HEIGHT_MM = 20
+
 export interface FloorPdfSnapshot {
   floorId: string
   floorName: string
@@ -39,6 +51,8 @@ export interface FloorPdfSnapshot {
 }
 
 export type PdfPageOrientation = 'best-fit' | 'portrait' | 'landscape'
+export type PdfPaperSize = keyof typeof PDF_PAPER_SIZES
+export type PdfResolutionDpi = (typeof PDF_DPI_OPTIONS)[number]
 
 export interface PdfLegendItem {
   symbolId: string
@@ -57,8 +71,13 @@ export function exportStageToPNG(stage: Konva.Stage): string {
   return stage.toDataURL({ pixelRatio: 2 })
 }
 
-export function exportStageToPDFImage(stage: Konva.Stage): string {
-  const sourceCanvas = stage.toCanvas({ pixelRatio: PDF_FLOOR_IMAGE_OPTIONS.pixelRatio })
+export function exportStageToPDFImage(
+  stage: Konva.Stage,
+  options: { pixelRatio?: number } = {}
+): string {
+  const sourceCanvas = stage.toCanvas({
+    pixelRatio: options.pixelRatio ?? PDF_FLOOR_IMAGE_OPTIONS.pixelRatio
+  })
   const outputCanvas = document.createElement('canvas')
   outputCanvas.width = sourceCanvas.width
   outputCanvas.height = sourceCanvas.height
@@ -123,24 +142,33 @@ export function exportFloorSnapshotsToPDF(
     includeLegend: boolean
     legendItems: PdfLegendItem[]
     pageOrientation?: PdfPageOrientation
+    paperSize?: PdfPaperSize
   }
 ): ArrayBuffer {
   const first = snapshots[0]
+  const paperSize = options.paperSize ?? 'a4'
   const doc = new jsPDF({
-    orientation: getSnapshotOrientation(first?.width ?? 297, first?.height ?? 210, options.pageOrientation),
+    orientation: resolvePdfPageOrientation(
+      first?.width ?? 297,
+      first?.height ?? 210,
+      options.pageOrientation
+    ),
     unit: 'mm',
-    format: 'a4'
+    format: paperSize
   })
 
   snapshots.forEach((snapshot, index) => {
     if (index > 0) {
-      doc.addPage('a4', getSnapshotOrientation(snapshot.width, snapshot.height, options.pageOrientation))
+      doc.addPage(
+        paperSize,
+        resolvePdfPageOrientation(snapshot.width, snapshot.height, options.pageOrientation)
+      )
     }
     addFloorPage(doc, snapshot, project, index + 1, snapshots.length)
   })
 
   if (options.includeLegend) {
-    if (snapshots.length > 0) doc.addPage('a4', 'portrait')
+    if (snapshots.length > 0) doc.addPage(paperSize, 'portrait')
     addLegendPage(doc, project, options.legendItems)
   }
 
@@ -211,8 +239,8 @@ function addFloorPage(
 ): void {
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  const margin = 15
-  const headerHeight = 20
+  const margin = PDF_PAGE_MARGIN_MM
+  const headerHeight = PDF_HEADER_HEIGHT_MM
 
   doc.setFontSize(16)
   doc.text(project.name, margin, margin)
@@ -293,13 +321,51 @@ function getOrientation(width: number, height: number): 'landscape' | 'portrait'
   return width > height ? 'landscape' : 'portrait'
 }
 
-function getSnapshotOrientation(
+export function resolvePdfPageOrientation(
   width: number,
   height: number,
   pageOrientation: PdfPageOrientation = 'best-fit'
 ): 'landscape' | 'portrait' {
   if (pageOrientation === 'portrait' || pageOrientation === 'landscape') return pageOrientation
   return getOrientation(width, height)
+}
+
+export function getPdfPageDimensionsMm(
+  paperSize: PdfPaperSize,
+  orientation: 'landscape' | 'portrait'
+): { width: number; height: number } {
+  const page = PDF_PAPER_SIZES[paperSize]
+  if (orientation === 'landscape') {
+    return { width: page.heightMm, height: page.widthMm }
+  }
+  return { width: page.widthMm, height: page.heightMm }
+}
+
+export function getPdfContentDimensionsMm(
+  paperSize: PdfPaperSize,
+  orientation: 'landscape' | 'portrait'
+): { width: number; height: number } {
+  const page = getPdfPageDimensionsMm(paperSize, orientation)
+  return {
+    width: Math.max(1, page.width - PDF_PAGE_MARGIN_MM * 2),
+    height: Math.max(1, page.height - PDF_PAGE_MARGIN_MM * 2 - PDF_HEADER_HEIGHT_MM)
+  }
+}
+
+export function getPdfRenderSize(
+  paperSize: PdfPaperSize,
+  orientation: 'landscape' | 'portrait',
+  dpi: PdfResolutionDpi
+): { width: number; height: number } {
+  const content = getPdfContentDimensionsMm(paperSize, orientation)
+  return {
+    width: mmToPixels(content.width, dpi),
+    height: mmToPixels(content.height, dpi)
+  }
+}
+
+function mmToPixels(mm: number, dpi: number): number {
+  return Math.max(1, Math.round((mm / 25.4) * dpi))
 }
 
 function getImageFormat(dataUrl: string): 'JPEG' | 'PNG' {

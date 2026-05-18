@@ -5,7 +5,9 @@ import { SymbolCategory, type SymbolShape } from '../symbols'
 import {
   exportFloorSnapshotsToPDF,
   exportStageToPDFImage,
+  getPdfRenderSize,
   PDF_FLOOR_IMAGE_OPTIONS,
+  resolvePdfPageOrientation,
   type PdfLegendItem
 } from '../services/exportService'
 
@@ -205,6 +207,47 @@ describe('PDF export', () => {
     expect(pdfInstances[0].pages[0]).toEqual(['a4', 'landscape'])
   })
 
+  it('uses the selected paper size for the document and additional floor pages', () => {
+    exportFloorSnapshotsToPDF(
+      [
+        {
+          floorId: 'floor-1',
+          floorName: 'Begane grond',
+          dataUrl: 'data:image/jpeg;base64,first-floor-image',
+          width: 1600,
+          height: 1000
+        },
+        {
+          floorId: 'floor-2',
+          floorName: '1e Verdieping',
+          dataUrl: 'data:image/jpeg;base64,second-floor-image',
+          width: 1600,
+          height: 1000
+        }
+      ],
+      project,
+      { includeLegend: false, legendItems: [], paperSize: 'a1', pageOrientation: 'landscape' }
+    )
+
+    expect(jsPDFMock).toHaveBeenCalledWith(
+      expect.objectContaining({ format: 'a1', orientation: 'landscape' })
+    )
+    expect(pdfInstances[0].pages[0]).toEqual(['a1', 'landscape'])
+  })
+
+  it('calculates print render pixels from paper size, orientation and DPI', () => {
+    expect(resolvePdfPageOrientation(800, 1200, 'best-fit')).toBe('portrait')
+    expect(resolvePdfPageOrientation(1200, 800, 'best-fit')).toBe('landscape')
+    expect(getPdfRenderSize('a2', 'landscape', 200)).toEqual({
+      width: 4441,
+      height: 2913
+    })
+    expect(getPdfRenderSize('a1', 'portrait', 300)).toEqual({
+      width: 6661,
+      height: 9343
+    })
+  })
+
   it('exports floor snapshots on a white background at print-friendly resolution and JPEG quality', () => {
     const sourceCanvas = document.createElement('canvas')
     sourceCanvas.width = 120
@@ -244,6 +287,26 @@ describe('PDF export', () => {
       mimeType: 'image/jpeg',
       quality: 0.94
     })
+  })
+
+  it('allows print snapshots to use a pre-sized stage without another pixel multiplier', () => {
+    const sourceCanvas = document.createElement('canvas')
+    sourceCanvas.width = 300
+    sourceCanvas.height = 200
+    const context = {
+      fillStyle: '',
+      fillRect: vi.fn(),
+      drawImage: vi.fn()
+    } as unknown as CanvasRenderingContext2D
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/jpeg;base64,print')
+    const stage = {
+      toCanvas: vi.fn().mockReturnValue(sourceCanvas)
+    } as unknown as Konva.Stage
+
+    exportStageToPDFImage(stage, { pixelRatio: 1 })
+
+    expect(stage.toCanvas).toHaveBeenCalledWith({ pixelRatio: 1 })
   })
 
   it('draws the real symbol icon in the legend instead of a generic colored circle', () => {

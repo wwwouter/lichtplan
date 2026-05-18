@@ -624,6 +624,30 @@ body {
   gap: 14px;
 }
 
+.pdf-select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pdf-select-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.pdf-select-row select {
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-white);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 0 8px;
+}
+
 .pdf-floor-row,
 .pdf-option-row {
   display: flex;

@@ -41,7 +41,7 @@ describe('PdfExportDialog', () => {
     fireEvent.click(screen.getByLabelText('Legenda toevoegen'))
     fireEvent.click(screen.getByRole('button', { name: 'Exporteren' }))
 
-    expect(onExport).toHaveBeenCalledWith(['floor-1', 'floor-2'], true, 'best-fit')
+    expect(onExport).toHaveBeenCalledWith(['floor-1', 'floor-2'], true, 'best-fit', 'a2', 200)
   })
 
   it('exports the selected page orientation', () => {
@@ -60,7 +60,27 @@ describe('PdfExportDialog', () => {
     fireEvent.click(screen.getByLabelText('Liggend'))
     fireEvent.click(screen.getByRole('button', { name: 'Exporteren' }))
 
-    expect(onExport).toHaveBeenCalledWith(['floor-1'], false, 'landscape')
+    expect(onExport).toHaveBeenCalledWith(['floor-1'], false, 'landscape', 'a2', 200)
+  })
+
+  it('exports the selected paper size and DPI', () => {
+    const onExport = vi.fn()
+
+    render(
+      <PdfExportDialog
+        floors={floors}
+        activeFloorId="floor-1"
+        isExporting={false}
+        onCancel={vi.fn()}
+        onExport={onExport}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText('Papierformaat'), { target: { value: 'a1' } })
+    fireEvent.change(screen.getByLabelText('Resolutie'), { target: { value: '300' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Exporteren' }))
+
+    expect(onExport).toHaveBeenCalledWith(['floor-1'], false, 'best-fit', 'a1', 300)
   })
 
   it('requires at least one floor before exporting', () => {

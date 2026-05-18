@@ -5,8 +5,12 @@ import type Konva from 'konva'
 import {
   exportStageToPDFImage,
   exportFloorSnapshotsToPDF,
+  getPdfRenderSize,
+  resolvePdfPageOrientation,
   type FloorPdfSnapshot,
+  type PdfPaperSize,
   type PdfPageOrientation,
+  type PdfResolutionDpi,
   type PdfLegendItem
 } from '../services/exportService'
 import { useProjectStore } from '../stores/useProjectStore'
@@ -110,7 +114,9 @@ export function Toolbar({ stageRef }: Props) {
   const handleConfirmExportPDF = async (
     floorIds: string[],
     includeLegend: boolean,
-    pageOrientation: PdfPageOrientation
+    pageOrientation: PdfPageOrientation,
+    paperSize: PdfPaperSize,
+    dpi: PdfResolutionDpi
   ) => {
     const stage = stageRef.current
     if (!stage || floorIds.length === 0) return
@@ -124,6 +130,7 @@ export function Toolbar({ stageRef }: Props) {
       scale: canvasState.scale,
       selectedSymbolId: canvasState.selectedSymbolId
     }
+    const originalStageGeometry = captureStageGeometry(stage)
 
     setIsExportingPDF(true)
     setLoading('PDF exporteren...')
@@ -135,18 +142,27 @@ export function Toolbar({ stageRef }: Props) {
         const floor = project.floors.find((f) => f.id === floorId)
         if (!floor) continue
 
+        const bounds = getFloorBounds(floor, hiddenSymbolIds)
+        const resolvedOrientation = resolvePdfPageOrientation(
+          bounds.width,
+          bounds.height,
+          pageOrientation
+        )
+        const renderSize = getPdfRenderSize(paperSize, resolvedOrientation, dpi)
+
         setActiveFloor(floor.id)
         setSelectedSymbol(null)
         await waitForStagePaint(stage)
-        zoomFloorToFit(stage, floor, hiddenSymbolIds, zoomToFit)
+
+        renderStageForPrint(stage, bounds, renderSize)
         await waitForStagePaint(stage)
 
         snapshots.push({
           floorId: floor.id,
           floorName: floor.name,
-          dataUrl: exportStageToPDFImage(stage),
-          width: stage.width(),
-          height: stage.height()
+          dataUrl: exportStageToPDFImage(stage, { pixelRatio: 1 }),
+          width: renderSize.width,
+          height: renderSize.height
         })
       }
 
@@ -159,7 +175,8 @@ export function Toolbar({ stageRef }: Props) {
       const pdfData = exportFloorSnapshotsToPDF(snapshots, project, {
         includeLegend,
         legendItems,
-        pageOrientation
+        pageOrientation,
+        paperSize
       })
       const selectedFloorNames = project.floors
         .filter((floor) => floorIds.includes(floor.id))
@@ -175,6 +192,7 @@ export function Toolbar({ stageRef }: Props) {
       setStagePosition(originalStage.x, originalStage.y)
       setScale(originalStage.scale)
       setSelectedSymbol(originalStage.selectedSymbolId)
+      restoreStageGeometry(stage, originalStageGeometry)
       setIsExportingPDF(false)
       setLoading(null)
       await waitForStagePaint(stage)
@@ -356,19 +374,52 @@ function getFloorBounds(
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
 }
 
-function zoomFloorToFit(
+interface StageGeometry {
+  width: number
+  height: number
+  x: number
+  y: number
+  scaleX: number
+  scaleY: number
+}
+
+function captureStageGeometry(stage: Konva.Stage): StageGeometry {
+  return {
+    width: stage.width(),
+    height: stage.height(),
+    x: stage.x(),
+    y: stage.y(),
+    scaleX: stage.scaleX(),
+    scaleY: stage.scaleY()
+  }
+}
+
+function restoreStageGeometry(stage: Konva.Stage, geometry: StageGeometry): void {
+  stage.width(geometry.width)
+  stage.height(geometry.height)
+  stage.x(geometry.x)
+  stage.y(geometry.y)
+  stage.scaleX(geometry.scaleX)
+  stage.scaleY(geometry.scaleY)
+  stage.batchDraw()
+}
+
+function renderStageForPrint(
   stage: Konva.Stage,
-  floor: Floor,
-  hiddenSymbolIds: Set<string>,
-  zoomToFit: (
-    bounds: { x: number; y: number; width: number; height: number },
-    viewportWidth: number,
-    viewportHeight: number
-  ) => void
+  bounds: { x: number; y: number; width: number; height: number },
+  size: { width: number; height: number }
 ): void {
-  const bounds = getFloorBounds(floor, hiddenSymbolIds)
-  const container = stage.container()
-  zoomToFit(bounds, container.clientWidth, container.clientHeight)
+  const scale = Math.min(size.width / bounds.width, size.height / bounds.height)
+  const stageX = (size.width - bounds.width * scale) / 2 - bounds.x * scale
+  const stageY = (size.height - bounds.height * scale) / 2 - bounds.y * scale
+
+  stage.width(size.width)
+  stage.height(size.height)
+  stage.x(stageX)
+  stage.y(stageY)
+  stage.scaleX(scale)
+  stage.scaleY(scale)
+  stage.batchDraw()
 }
 
 function waitForStagePaint(stage: Konva.Stage): Promise<void> {
