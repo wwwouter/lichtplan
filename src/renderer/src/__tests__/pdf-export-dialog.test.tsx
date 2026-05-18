@@ -21,7 +21,7 @@ const floors: Floor[] = [
 ]
 
 describe('PdfExportDialog', () => {
-  it('exports the selected floors and legend preference', () => {
+  it('exports the selected floors, legend preference and default page orientation', () => {
     const onExport = vi.fn()
 
     render(
@@ -41,7 +41,26 @@ describe('PdfExportDialog', () => {
     fireEvent.click(screen.getByLabelText('Legenda toevoegen'))
     fireEvent.click(screen.getByRole('button', { name: 'Exporteren' }))
 
-    expect(onExport).toHaveBeenCalledWith(['floor-1', 'floor-2'], true)
+    expect(onExport).toHaveBeenCalledWith(['floor-1', 'floor-2'], true, 'best-fit')
+  })
+
+  it('exports the selected page orientation', () => {
+    const onExport = vi.fn()
+
+    render(
+      <PdfExportDialog
+        floors={floors}
+        activeFloorId="floor-1"
+        isExporting={false}
+        onCancel={vi.fn()}
+        onExport={onExport}
+      />
+    )
+
+    fireEvent.click(screen.getByLabelText('Liggend'))
+    fireEvent.click(screen.getByRole('button', { name: 'Exporteren' }))
+
+    expect(onExport).toHaveBeenCalledWith(['floor-1'], false, 'landscape')
   })
 
   it('requires at least one floor before exporting', () => {

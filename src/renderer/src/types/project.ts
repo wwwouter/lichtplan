@@ -20,6 +20,7 @@ export interface FloorPlanImage {
   width: number
   height: number
   fileName: string
+  grayscale?: boolean
 }
 
 export type DiagramLineType = 'straight' | 'dotted'

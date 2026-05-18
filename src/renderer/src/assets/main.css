@@ -619,6 +619,11 @@ body {
   border-radius: 6px;
 }
 
+.pdf-orientation-options {
+  display: flex;
+  gap: 14px;
+}
+
 .pdf-floor-row,
 .pdf-option-row {
   display: flex;
@@ -650,6 +655,10 @@ body {
 
 .pdf-option-row {
   margin-top: 12px;
+}
+
+.pdf-orientation-options .pdf-option-row {
+  margin-top: 0;
 }
 
 /* === Loading Overlay === */

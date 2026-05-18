@@ -3,7 +3,11 @@ import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import { useUIStore } from '../stores/useUIStore'
 import { serializeProject, deserializeProject } from '../services/fileService'
-import { loadFloorPlanImage } from '../services/imageService'
+import {
+  createFloorPlanDownloadDataUrl,
+  getFloorPlanDownloadFileName,
+  loadFloorPlanImage
+} from '../services/imageService'
 
 export function useFileOperations() {
   const { project, filePath, activeFloorId, setProject, setFilePath, markClean, newProject, setFloorImage } =
@@ -112,12 +116,56 @@ export function useFileOperations() {
     }
   }, [activeFloorId, setFloorImage])
 
+  const handleDownloadFloorPlanImage = useCallback(async () => {
+    const ui = useUIStore.getState()
+    ui.setNotification(null)
+
+    const state = useProjectStore.getState()
+    const floor = state.project.floors.find((f) => f.id === state.activeFloorId)
+    const image = floor?.floorPlanImage
+
+    if (!image) {
+      ui.setNotification({
+        type: 'error',
+        message: 'Er is geen plattegrond om te downloaden.'
+      })
+      return
+    }
+
+    try {
+      ui.setLoading('Plattegrond downloaden...')
+      const dataUrl = await createFloorPlanDownloadDataUrl(image)
+      const fileName = getFloorPlanDownloadFileName(image)
+      const savedPath = await window.api.exportPNG(dataUrl, fileName)
+
+      if (savedPath) {
+        ui.setNotification({
+          type: 'success',
+          message: `Plattegrond gedownload: ${getDisplayFileName(savedPath)}.`
+        })
+      } else {
+        ui.setNotification({
+          type: 'error',
+          message: 'Plattegrond downloaden is geannuleerd of geblokkeerd door de browser.'
+        })
+      }
+    } catch (error) {
+      ui.setNotification({
+        type: 'error',
+        message: `Plattegrond downloaden mislukt: ${getErrorMessage(error)}`
+      })
+    } finally {
+      ui.setLoading(null)
+    }
+  }, [])
+
   return {
     handleNew,
     handleOpen,
     handleSave,
     handleSaveAs,
-    handleLoadImage
+    handleLoadImage,
+    handleDownloadFloorPlanImage
   }
 }
 

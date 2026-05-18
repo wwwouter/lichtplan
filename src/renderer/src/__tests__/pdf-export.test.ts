@@ -1,7 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type Konva from 'konva'
 import type { Project } from '../types/project'
 import { SymbolCategory, type SymbolShape } from '../symbols'
-import { exportFloorSnapshotsToPDF, type PdfLegendItem } from '../services/exportService'
+import {
+  exportFloorSnapshotsToPDF,
+  exportStageToPDFImage,
+  PDF_FLOOR_IMAGE_OPTIONS,
+  type PdfLegendItem
+} from '../services/exportService'
 
 const { pdfInstances, jsPDFMock } = vi.hoisted(() => {
   interface ImageCall {
@@ -123,6 +129,10 @@ describe('PDF export', () => {
     jsPDFMock.mockClear()
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('embeds compact JPEG floor snapshots as JPEG instead of inflating them as PNG', () => {
     exportFloorSnapshotsToPDF(
       [
@@ -139,6 +149,101 @@ describe('PDF export', () => {
     )
 
     expect(pdfInstances[0].images[0].args[1]).toBe('JPEG')
+  })
+
+  it('uses the selected fixed page orientation for floor pages', () => {
+    exportFloorSnapshotsToPDF(
+      [
+        {
+          floorId: 'floor-1',
+          floorName: 'Staande plattegrond',
+          dataUrl: 'data:image/jpeg;base64,first-floor-image',
+          width: 800,
+          height: 1200
+        },
+        {
+          floorId: 'floor-2',
+          floorName: 'Liggende plattegrond',
+          dataUrl: 'data:image/jpeg;base64,second-floor-image',
+          width: 1200,
+          height: 800
+        }
+      ],
+      project,
+      { includeLegend: false, legendItems: [], pageOrientation: 'landscape' }
+    )
+
+    expect(jsPDFMock).toHaveBeenCalledWith(
+      expect.objectContaining({ orientation: 'landscape' })
+    )
+    expect(pdfInstances[0].pages[0]).toEqual(['a4', 'landscape'])
+  })
+
+  it('uses best-fit page orientation from each floor snapshot by default', () => {
+    exportFloorSnapshotsToPDF(
+      [
+        {
+          floorId: 'floor-1',
+          floorName: 'Staande plattegrond',
+          dataUrl: 'data:image/jpeg;base64,first-floor-image',
+          width: 800,
+          height: 1200
+        },
+        {
+          floorId: 'floor-2',
+          floorName: 'Liggende plattegrond',
+          dataUrl: 'data:image/jpeg;base64,second-floor-image',
+          width: 1200,
+          height: 800
+        }
+      ],
+      project,
+      { includeLegend: false, legendItems: [] }
+    )
+
+    expect(jsPDFMock).toHaveBeenCalledWith(expect.objectContaining({ orientation: 'portrait' }))
+    expect(pdfInstances[0].pages[0]).toEqual(['a4', 'landscape'])
+  })
+
+  it('exports floor snapshots on a white background at print-friendly resolution and JPEG quality', () => {
+    const sourceCanvas = document.createElement('canvas')
+    sourceCanvas.width = 120
+    sourceCanvas.height = 80
+    const fillRect = vi.fn()
+    const drawImage = vi.fn()
+    let fillStyle = ''
+    const context = {
+      get fillStyle() {
+        return fillStyle
+      },
+      set fillStyle(value: string) {
+        fillStyle = value
+      },
+      fillRect,
+      drawImage
+    } as unknown as CanvasRenderingContext2D
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)
+    const toDataURL = vi
+      .spyOn(HTMLCanvasElement.prototype, 'toDataURL')
+      .mockReturnValue('data:image/jpeg;base64,sharp-floor-image')
+    const stage = {
+      toCanvas: vi.fn().mockReturnValue(sourceCanvas)
+    } as unknown as Konva.Stage
+
+    const dataUrl = exportStageToPDFImage(stage)
+
+    expect(dataUrl).toBe('data:image/jpeg;base64,sharp-floor-image')
+    expect(stage.toCanvas).toHaveBeenCalledWith({ pixelRatio: PDF_FLOOR_IMAGE_OPTIONS.pixelRatio })
+    expect(getContext).toHaveBeenCalledWith('2d')
+    expect(fillStyle).toBe('#ffffff')
+    expect(fillRect).toHaveBeenCalledWith(0, 0, sourceCanvas.width, sourceCanvas.height)
+    expect(drawImage).toHaveBeenCalledWith(sourceCanvas, 0, 0)
+    expect(toDataURL).toHaveBeenCalledWith('image/jpeg', 0.94)
+    expect(PDF_FLOOR_IMAGE_OPTIONS).toEqual({
+      pixelRatio: 3,
+      mimeType: 'image/jpeg',
+      quality: 0.94
+    })
   })
 
   it('draws the real symbol icon in the legend instead of a generic colored circle', () => {

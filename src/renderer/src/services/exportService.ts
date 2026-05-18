@@ -25,9 +25,9 @@ interface PdfPoint {
 }
 
 export const PDF_FLOOR_IMAGE_OPTIONS = {
-  pixelRatio: 1,
+  pixelRatio: 3,
   mimeType: 'image/jpeg' as const,
-  quality: 0.82
+  quality: 0.94
 }
 
 export interface FloorPdfSnapshot {
@@ -37,6 +37,8 @@ export interface FloorPdfSnapshot {
   width: number
   height: number
 }
+
+export type PdfPageOrientation = 'best-fit' | 'portrait' | 'landscape'
 
 export interface PdfLegendItem {
   symbolId: string
@@ -56,7 +58,21 @@ export function exportStageToPNG(stage: Konva.Stage): string {
 }
 
 export function exportStageToPDFImage(stage: Konva.Stage): string {
-  return stage.toDataURL(PDF_FLOOR_IMAGE_OPTIONS)
+  const sourceCanvas = stage.toCanvas({ pixelRatio: PDF_FLOOR_IMAGE_OPTIONS.pixelRatio })
+  const outputCanvas = document.createElement('canvas')
+  outputCanvas.width = sourceCanvas.width
+  outputCanvas.height = sourceCanvas.height
+
+  const context = outputCanvas.getContext('2d')
+  if (!context) {
+    throw new Error('Kan PDF-afbeelding niet renderen.')
+  }
+
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, outputCanvas.width, outputCanvas.height)
+  context.drawImage(sourceCanvas, 0, 0)
+
+  return outputCanvas.toDataURL(PDF_FLOOR_IMAGE_OPTIONS.mimeType, PDF_FLOOR_IMAGE_OPTIONS.quality)
 }
 
 export function exportFloorToPDF(
@@ -103,18 +119,22 @@ export function exportFloorToPDF(
 export function exportFloorSnapshotsToPDF(
   snapshots: FloorPdfSnapshot[],
   project: Project,
-  options: { includeLegend: boolean; legendItems: PdfLegendItem[] }
+  options: {
+    includeLegend: boolean
+    legendItems: PdfLegendItem[]
+    pageOrientation?: PdfPageOrientation
+  }
 ): ArrayBuffer {
   const first = snapshots[0]
   const doc = new jsPDF({
-    orientation: getOrientation(first?.width ?? 297, first?.height ?? 210),
+    orientation: getSnapshotOrientation(first?.width ?? 297, first?.height ?? 210, options.pageOrientation),
     unit: 'mm',
     format: 'a4'
   })
 
   snapshots.forEach((snapshot, index) => {
     if (index > 0) {
-      doc.addPage('a4', getOrientation(snapshot.width, snapshot.height))
+      doc.addPage('a4', getSnapshotOrientation(snapshot.width, snapshot.height, options.pageOrientation))
     }
     addFloorPage(doc, snapshot, project, index + 1, snapshots.length)
   })
@@ -271,6 +291,15 @@ function addLegendPage(doc: jsPDF, project: Project, legendItems: PdfLegendItem[
 
 function getOrientation(width: number, height: number): 'landscape' | 'portrait' {
   return width > height ? 'landscape' : 'portrait'
+}
+
+function getSnapshotOrientation(
+  width: number,
+  height: number,
+  pageOrientation: PdfPageOrientation = 'best-fit'
+): 'landscape' | 'portrait' {
+  if (pageOrientation === 'portrait' || pageOrientation === 'landscape') return pageOrientation
+  return getOrientation(width, height)
 }
 
 function getImageFormat(dataUrl: string): 'JPEG' | 'PNG' {

@@ -30,6 +30,7 @@ interface ProjectState {
   renameFloor: (floorId: string, name: string) => void
   setActiveFloor: (floorId: string) => void
   setFloorImage: (floorId: string, image: FloorPlanImage) => void
+  setFloorImageGrayscale: (floorId: string, grayscale: boolean) => void
   setFloorScale: (floorId: string, pixelsPerMm: number) => void
   getActiveFloor: () => Floor | undefined
 
@@ -277,6 +278,24 @@ export const useProjectStore = create<ProjectState>((set, get) => {
         },
         isDirty: true
       })),
+
+    setFloorImageGrayscale: (floorId, grayscale) => {
+      const floor = get().project.floors.find((f) => f.id === floorId)
+      if (!floor?.floorPlanImage || floor.floorPlanImage.grayscale === grayscale) return
+
+      setWithHistory((state) => ({
+        project: {
+          ...state.project,
+          floors: state.project.floors.map((f) =>
+            f.id === floorId && f.floorPlanImage
+              ? { ...f, floorPlanImage: { ...f.floorPlanImage, grayscale } }
+              : f
+          ),
+          updatedAt: new Date().toISOString()
+        },
+        isDirty: true
+      }))
+    },
 
     setFloorScale: (floorId, pixelsPerMm) =>
       setWithHistory((state) => ({

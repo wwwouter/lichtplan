@@ -6,6 +6,7 @@ import {
   exportStageToPDFImage,
   exportFloorSnapshotsToPDF,
   type FloorPdfSnapshot,
+  type PdfPageOrientation,
   type PdfLegendItem
 } from '../services/exportService'
 import { useProjectStore } from '../stores/useProjectStore'
@@ -20,7 +21,13 @@ interface Props {
 }
 
 export function Toolbar({ stageRef }: Props) {
-  const { handleNew, handleOpen, handleSave, handleLoadImage } = useFileOperations()
+  const {
+    handleNew,
+    handleOpen,
+    handleSave,
+    handleLoadImage,
+    handleDownloadFloorPlanImage
+  } = useFileOperations()
   const {
     scale,
     zoomIn,
@@ -34,6 +41,7 @@ export function Toolbar({ stageRef }: Props) {
   const project = useProjectStore((s) => s.project)
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const setActiveFloor = useProjectStore((s) => s.setActiveFloor)
+  const setFloorImageGrayscale = useProjectStore((s) => s.setFloorImageGrayscale)
   const canUndo = useProjectStore((s) => s.canUndo)
   const canRedo = useProjectStore((s) => s.canRedo)
   const undo = useProjectStore((s) => s.undo)
@@ -51,6 +59,8 @@ export function Toolbar({ stageRef }: Props) {
   const activeFloor = project.floors.find((f) => f.id === activeFloorId)
   const hasContent = !!(activeFloor?.floorPlanImage || (activeFloor?.symbols.length ?? 0) > 0)
   const hasScale = !!activeFloor?.pixelsPerMm
+  const hasFloorPlanImage = !!activeFloor?.floorPlanImage
+  const floorPlanImageIsGrayscale = !!activeFloor?.floorPlanImage?.grayscale
 
   const handleZoomToFit = () => {
     if (!stageRef.current || !activeFloor) return
@@ -92,7 +102,16 @@ export function Toolbar({ stageRef }: Props) {
     setPdfExportDialogOpen(true)
   }
 
-  const handleConfirmExportPDF = async (floorIds: string[], includeLegend: boolean) => {
+  const handleToggleImageGrayscale = () => {
+    if (!activeFloor?.floorPlanImage) return
+    setFloorImageGrayscale(activeFloor.id, !floorPlanImageIsGrayscale)
+  }
+
+  const handleConfirmExportPDF = async (
+    floorIds: string[],
+    includeLegend: boolean,
+    pageOrientation: PdfPageOrientation
+  ) => {
     const stage = stageRef.current
     if (!stage || floorIds.length === 0) return
 
@@ -137,7 +156,11 @@ export function Toolbar({ stageRef }: Props) {
             hiddenSymbolIds
           )
         : []
-      const pdfData = exportFloorSnapshotsToPDF(snapshots, project, { includeLegend, legendItems })
+      const pdfData = exportFloorSnapshotsToPDF(snapshots, project, {
+        includeLegend,
+        legendItems,
+        pageOrientation
+      })
       const selectedFloorNames = project.floors
         .filter((floor) => floorIds.includes(floor.id))
         .map((floor) => floor.name)
@@ -193,6 +216,31 @@ export function Toolbar({ stageRef }: Props) {
           <button onClick={handleLoadImage} title="Plattegrond laden">
             <span className="toolbar-icon">🖼</span>
             <span>Plattegrond</span>
+          </button>
+          <button
+            className={floorPlanImageIsGrayscale ? 'active' : ''}
+            onClick={handleToggleImageGrayscale}
+            disabled={!hasFloorPlanImage}
+            title={
+              hasFloorPlanImage
+                ? 'Plattegrond grijswaarden aan/uit'
+                : 'Laad eerst een plattegrond'
+            }
+          >
+            <span className="toolbar-icon">◐</span>
+            <span>Grijs</span>
+          </button>
+          <button
+            onClick={handleDownloadFloorPlanImage}
+            disabled={!hasFloorPlanImage}
+            title={
+              hasFloorPlanImage
+                ? 'Plattegrond downloaden'
+                : 'Laad eerst een plattegrond'
+            }
+          >
+            <span className="toolbar-icon">⬇</span>
+            <span>Download</span>
           </button>
         </div>
 
