@@ -3,7 +3,11 @@ import { useUIStore } from '../stores/useUIStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import type { DiagramLineType } from '../types/project'
-import { DEFAULT_DIAGRAM_LINE, DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
+import {
+  DEFAULT_DIAGRAM_LINE,
+  DIAGRAM_LINE_EQUAL_LENGTH_LABEL,
+  DIAGRAM_LINE_SYMBOL_ID
+} from './diagramLine'
 import { TEXT_SYMBOL_ID } from './symbolVisibility'
 
 export function ContextMenu() {
@@ -127,6 +131,13 @@ export function ContextMenu() {
     setContextMenu(null)
   }
 
+  const handleSetEqualLengthLineLabel = () => {
+    updateSymbol(activeFloorId, contextMenu.symbolId, {
+      label: DIAGRAM_LINE_EQUAL_LENGTH_LABEL
+    })
+    setContextMenu(null)
+  }
+
   return (
     <div
       ref={menuRef}
@@ -172,6 +183,9 @@ export function ContextMenu() {
       {isDiagramLine && (
         <>
           <div className="context-menu-separator" />
+          <button className="context-menu-item" onClick={handleSetEqualLengthLineLabel}>
+            Label {DIAGRAM_LINE_EQUAL_LENGTH_LABEL}
+          </button>
           <button
             className={`context-menu-item${symbol?.diagramLine?.type !== 'dotted' ? ' active' : ''}`}
             onClick={() => handleSetLineType('straight')}

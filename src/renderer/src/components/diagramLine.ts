@@ -1,6 +1,7 @@
 import type { DiagramLine, PlacedSymbol } from '../types/project'
 
 export const DIAGRAM_LINE_SYMBOL_ID = 'lijn'
+export const DIAGRAM_LINE_EQUAL_LENGTH_LABEL = '𝕏'
 export const DEFAULT_DIAGRAM_LINE: DiagramLine = {
   endX: 120,
   endY: 0,
