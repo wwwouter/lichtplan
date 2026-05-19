@@ -53,7 +53,7 @@ describe('PdfExportDialog', () => {
       ],
       true,
       'best-fit',
-      'a2',
+      'a1',
       200
     )
   })
@@ -79,7 +79,7 @@ describe('PdfExportDialog', () => {
       [{ floorId: 'floor-1', profileId: CURRENT_VISIBILITY_EXPORT_PROFILE_ID }],
       false,
       'landscape',
-      'a2',
+      'a1',
       200
     )
   })
@@ -151,7 +151,7 @@ describe('PdfExportDialog', () => {
       ],
       false,
       'best-fit',
-      'a2',
+      'a1',
       200
     )
   })

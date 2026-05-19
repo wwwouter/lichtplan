@@ -1,13 +1,17 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useUIStore } from '../stores/useUIStore'
+
+const SUBJECT_OPTIONS_ID = 'subject-options'
 
 export function SubjectDialog() {
   const { subjectDialog, setSubjectDialog } = useUIStore()
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
+  const floors = useProjectStore((s) => s.project.floors)
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const [value, setValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const subjectOptions = useMemo(() => getUsedSubjects(floors), [floors])
 
   useEffect(() => {
     if (!subjectDialog) return
@@ -41,11 +45,17 @@ export function SubjectDialog() {
         <input
           ref={inputRef}
           className="dialog-input"
+          list={SUBJECT_OPTIONS_ID}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="bijv. beamer, cameras"
         />
+        <datalist id={SUBJECT_OPTIONS_ID}>
+          {subjectOptions.map((subject) => (
+            <option key={subject} value={subject} />
+          ))}
+        </datalist>
         <div className="dialog-actions">
           <button className="dialog-btn" onClick={() => setSubjectDialog(null)}>
             Annuleren
@@ -57,4 +67,19 @@ export function SubjectDialog() {
       </div>
     </div>
   )
+}
+
+function getUsedSubjects(floors: ReturnType<typeof useProjectStore.getState>['project']['floors']): string[] {
+  const subjectsByKey = new Map<string, string>()
+
+  floors.forEach((floor) => {
+    floor.symbols.forEach((symbol) => {
+      const subject = symbol.subject?.trim()
+      if (!subject) return
+      const key = subject.toLocaleLowerCase('nl')
+      if (!subjectsByKey.has(key)) subjectsByKey.set(key, subject)
+    })
+  })
+
+  return Array.from(subjectsByKey.values()).sort((a, b) => a.localeCompare(b, 'nl'))
 }

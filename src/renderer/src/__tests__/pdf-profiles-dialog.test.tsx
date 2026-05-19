@@ -166,4 +166,36 @@ describe('PdfProfilesDialog', () => {
       })
     )
   })
+
+  it('saves a valid profile with cmd enter', () => {
+    const onAddProfile = vi.fn()
+
+    render(
+      <PdfProfilesDialog
+        floors={floors}
+        onCancel={vi.fn()}
+        onAddProfile={onAddProfile}
+        onUpdateProfile={vi.fn()}
+        onRemoveProfile={vi.fn()}
+      />
+    )
+
+    fireEvent.change(screen.getByLabelText('Profielnaam'), { target: { value: 'Beamer' } })
+    fireEvent.click(screen.getByLabelText('beamer'))
+    fireEvent.keyDown(screen.getByLabelText('Profielnaam'), {
+      key: 'Enter',
+      metaKey: true
+    })
+
+    expect(onAddProfile).toHaveBeenCalledWith({
+      name: 'Beamer',
+      rules: [
+        expect.objectContaining({
+          field: 'subject',
+          operator: 'is',
+          values: ['beamer']
+        })
+      ]
+    })
+  })
 })

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
 import { ALL_SYMBOLS, SymbolCategory } from '../symbols'
 import {
   describeExportProfileRule,
@@ -103,9 +103,19 @@ export function PdfProfilesDialog({
     resetForm()
   }
 
+  const handleDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Enter' || (!event.metaKey && !event.ctrlKey)) return
+    event.preventDefault()
+    handleSaveProfile()
+  }
+
   return (
     <div className="dialog-overlay" onClick={onCancel}>
-      <div className="dialog pdf-profiles-dialog" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="dialog pdf-profiles-dialog"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={handleDialogKeyDown}
+      >
         <div className="dialog-title">PDF profielen</div>
 
         <div className="pdf-export-section">

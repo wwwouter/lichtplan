@@ -42,7 +42,7 @@ export function PdfExportDialog({
   >({ [activeFloorId]: [CURRENT_VISIBILITY_EXPORT_PROFILE_ID] })
   const [includeLegend, setIncludeLegend] = useState(false)
   const [pageOrientation, setPageOrientation] = useState<PdfPageOrientation>('best-fit')
-  const [paperSize, setPaperSize] = useState<PdfPaperSize>('a2')
+  const [paperSize, setPaperSize] = useState<PdfPaperSize>('a1')
   const [dpi, setDpi] = useState<PdfResolutionDpi>(200)
 
   const selections = floors.flatMap((floor) =>
