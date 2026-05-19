@@ -509,6 +509,14 @@ body {
   color: var(--text-primary);
 }
 
+.dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
 .dialog-input {
   width: 100%;
   padding: 8px 10px;
@@ -522,6 +530,18 @@ body {
 .dialog-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.dialog-help {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.dialog-error {
+  margin-top: 8px;
+  color: #dc2626;
+  font-size: 12px;
 }
 
 .dialog-actions {

@@ -31,6 +31,7 @@ interface ProjectState {
   setActiveFloor: (floorId: string) => void
   setFloorImage: (floorId: string, image: FloorPlanImage) => void
   setFloorImageGrayscale: (floorId: string, grayscale: boolean) => void
+  scaleFloorPlanImage: (floorId: string, factor: number) => void
   setFloorScale: (floorId: string, pixelsPerMm: number) => void
   getActiveFloor: () => Floor | undefined
 
@@ -289,6 +290,52 @@ export const useProjectStore = create<ProjectState>((set, get) => {
           floors: state.project.floors.map((f) =>
             f.id === floorId && f.floorPlanImage
               ? { ...f, floorPlanImage: { ...f.floorPlanImage, grayscale } }
+              : f
+          ),
+          updatedAt: new Date().toISOString()
+        },
+        isDirty: true
+      }))
+    },
+
+    scaleFloorPlanImage: (floorId, factor) => {
+      const floor = get().project.floors.find((f) => f.id === floorId)
+      if (!floor?.floorPlanImage || !Number.isFinite(factor) || factor <= 0 || factor === 1) {
+        return
+      }
+
+      setWithHistory((state) => ({
+        project: {
+          ...state.project,
+          floors: state.project.floors.map((f) =>
+            f.id === floorId && f.floorPlanImage
+              ? {
+                  ...f,
+                  floorPlanImage: {
+                    ...f.floorPlanImage,
+                    width: Math.max(1, Math.round(f.floorPlanImage.width * factor)),
+                    height: Math.max(1, Math.round(f.floorPlanImage.height * factor))
+                  },
+                  pixelsPerMm: f.pixelsPerMm ? f.pixelsPerMm * factor : undefined,
+                  symbols: f.symbols.map((symbol) => {
+                    const scaledSymbol = {
+                      ...symbol,
+                      x: symbol.x * factor,
+                      y: symbol.y * factor
+                    }
+
+                    return symbol.diagramLine
+                      ? {
+                          ...scaledSymbol,
+                          diagramLine: {
+                            ...symbol.diagramLine,
+                            endX: symbol.diagramLine.endX * factor,
+                            endY: symbol.diagramLine.endY * factor
+                          }
+                        }
+                      : scaledSymbol
+                  })
+                }
               : f
           ),
           updatedAt: new Date().toISOString()

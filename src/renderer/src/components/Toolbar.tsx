@@ -17,6 +17,7 @@ import { useProjectStore } from '../stores/useProjectStore'
 import { useUIStore } from '../stores/useUIStore'
 import { CATEGORY_COLORS, getSymbolById, SymbolCategory } from '../symbols'
 import type { Floor } from '../types/project'
+import { FloorPlanScaleDialog } from './FloorPlanScaleDialog'
 import { PdfExportDialog } from './PdfExportDialog'
 import { isPlacedSymbolVisible } from './symbolVisibility'
 
@@ -46,6 +47,7 @@ export function Toolbar({ stageRef }: Props) {
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const setActiveFloor = useProjectStore((s) => s.setActiveFloor)
   const setFloorImageGrayscale = useProjectStore((s) => s.setFloorImageGrayscale)
+  const scaleFloorPlanImage = useProjectStore((s) => s.scaleFloorPlanImage)
   const canUndo = useProjectStore((s) => s.canUndo)
   const canRedo = useProjectStore((s) => s.canRedo)
   const undo = useProjectStore((s) => s.undo)
@@ -59,6 +61,7 @@ export function Toolbar({ stageRef }: Props) {
   const setLoading = useUIStore((s) => s.setLoading)
   const hiddenSymbolIds = useUIStore((s) => s.hiddenSymbolIds)
   const [isExportingPDF, setIsExportingPDF] = useState(false)
+  const [floorPlanScaleDialogOpen, setFloorPlanScaleDialogOpen] = useState(false)
 
   const activeFloor = project.floors.find((f) => f.id === activeFloorId)
   const hasContent = !!(activeFloor?.floorPlanImage || (activeFloor?.symbols.length ?? 0) > 0)
@@ -109,6 +112,40 @@ export function Toolbar({ stageRef }: Props) {
   const handleToggleImageGrayscale = () => {
     if (!activeFloor?.floorPlanImage) return
     setFloorImageGrayscale(activeFloor.id, !floorPlanImageIsGrayscale)
+  }
+
+  const handleOpenFloorPlanScaleDialog = () => {
+    if (!activeFloor?.floorPlanImage) return
+    setFloorPlanScaleDialogOpen(true)
+  }
+
+  const handleConfirmFloorPlanScale = (percentage: number) => {
+    if (!activeFloor?.floorPlanImage) return
+    const ui = useUIStore.getState()
+    const factor = percentage / 100
+    if (factor === 1) {
+      setFloorPlanScaleDialogOpen(false)
+      return
+    }
+
+    scaleFloorPlanImage(activeFloor.id, factor)
+    const resizedFloor = useProjectStore
+      .getState()
+      .project.floors.find((floor) => floor.id === activeFloor.id)
+    const stage = stageRef.current
+    if (stage && resizedFloor) {
+      const container = stage.container()
+      zoomToFit(
+        getFloorBounds(resizedFloor, hiddenSymbolIds),
+        container.clientWidth,
+        container.clientHeight
+      )
+    }
+    ui.setNotification({
+      type: 'success',
+      message: `Plattegrond geschaald naar ${percentage}%.`
+    })
+    setFloorPlanScaleDialogOpen(false)
   }
 
   const handleConfirmExportPDF = async (
@@ -249,6 +286,18 @@ export function Toolbar({ stageRef }: Props) {
             <span>Grijs</span>
           </button>
           <button
+            onClick={handleOpenFloorPlanScaleDialog}
+            disabled={!hasFloorPlanImage}
+            title={
+              hasFloorPlanImage
+                ? 'Plattegrond schalen en symbolen meeplaatsen'
+                : 'Laad eerst een plattegrond'
+            }
+          >
+            <span className="toolbar-icon">↕</span>
+            <span>Formaat</span>
+          </button>
+          <button
             onClick={handleDownloadFloorPlanImage}
             disabled={!hasFloorPlanImage}
             title={
@@ -331,6 +380,13 @@ export function Toolbar({ stageRef }: Props) {
           isExporting={isExportingPDF}
           onCancel={() => setPdfExportDialogOpen(false)}
           onExport={handleConfirmExportPDF}
+        />
+      )}
+      {floorPlanScaleDialogOpen && activeFloor?.floorPlanImage && (
+        <FloorPlanScaleDialog
+          image={activeFloor.floorPlanImage}
+          onCancel={() => setFloorPlanScaleDialogOpen(false)}
+          onScale={handleConfirmFloorPlanScale}
         />
       )}
     </>
