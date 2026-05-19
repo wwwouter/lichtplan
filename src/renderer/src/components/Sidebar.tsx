@@ -1,4 +1,4 @@
-import { SYMBOLS_BY_CATEGORY, CATEGORY_COLORS, SymbolCategory } from '../symbols'
+import { PALETTE_SYMBOLS_BY_CATEGORY, CATEGORY_COLORS, SymbolCategory } from '../symbols'
 import { useUIStore } from '../stores/useUIStore'
 import { SymbolPaletteItem } from './SymbolPaletteItem'
 
@@ -28,7 +28,7 @@ export function Sidebar() {
       </div>
       <div className="sidebar-header">Symbolen</div>
       {Object.values(SymbolCategory).map((category) => {
-        const symbols = SYMBOLS_BY_CATEGORY[category]
+        const symbols = PALETTE_SYMBOLS_BY_CATEGORY[category]
         const isExpanded = expandedCategories[category] ?? true
         const color = CATEGORY_COLORS[category]
 

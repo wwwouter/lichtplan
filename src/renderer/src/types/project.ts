@@ -2,8 +2,15 @@ export interface Project {
   id: string
   name: string
   floors: Floor[]
+  exportProfiles?: ExportProfile[]
   createdAt: string
   updatedAt: string
+}
+
+export interface ExportProfile {
+  id: string
+  name: string
+  symbolIds: string[]
 }
 
 export interface Floor {

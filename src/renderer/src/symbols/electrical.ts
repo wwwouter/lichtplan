@@ -52,5 +52,19 @@ export const electricalSymbols: SymbolDefinition[] = [
       { type: 'line', points: [1, 24, 25, 24, 13, 2], stroke: color, strokeWidth: 2, closed: true, fill: '#ffffff' },
       { type: 'text', x: 6, y: 13, text: '5e', fontSize: 9, fill: color, fontStyle: 'bold' }
     ]
+  },
+  {
+    id: '12v-lasdoos',
+    name: '12V lasdoos',
+    category: SymbolCategory.Elektra,
+    width: 30,
+    height: 24,
+    shapes: [
+      { type: 'rect', x: 2, y: 5, width: 26, height: 16, stroke: color, strokeWidth: 2, fill: '#ffffff' },
+      { type: 'circle', x: 8, y: 13, radius: 2, fill: color },
+      { type: 'circle', x: 22, y: 13, radius: 2, fill: color },
+      { type: 'line', points: [8, 13, 22, 13], stroke: color, strokeWidth: 2 },
+      { type: 'text', x: 7, y: 6, text: '12V', fontSize: 7, fill: color, fontStyle: 'bold' }
+    ]
   }
 ]

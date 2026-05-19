@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
-import { Project, Floor, PlacedSymbol, FloorPlanImage } from '../types/project'
+import { Project, Floor, PlacedSymbol, FloorPlanImage, ExportProfile } from '../types/project'
 import { DIAGRAM_LINE_SYMBOL_ID } from '../components/diagramLine'
 
 const MAX_HISTORY = 50
@@ -23,6 +23,8 @@ interface ProjectState {
   setProjectName: (name: string) => void
   setFilePath: (path: string | null) => void
   markClean: () => void
+  addExportProfile: (profile: Omit<ExportProfile, 'id'>) => string
+  removeExportProfile: (profileId: string) => void
 
   // Floor actions
   addFloor: (name: string) => void
@@ -55,6 +57,7 @@ const createDefaultProject = (): Project => {
   return {
     id: uuidv4(),
     name: 'Nieuw project',
+    exportProfiles: [],
     floors: [
       {
         id: floorId,
@@ -97,6 +100,7 @@ function nextItemId(symbols: PlacedSymbol[]): string {
 function assignMissingItemIds(project: Project): Project {
   return {
     ...project,
+    exportProfiles: project.exportProfiles ?? [],
     floors: project.floors.map((floor) => {
       let curr = getMaxItemId(floor.symbols)
       return {
@@ -219,6 +223,36 @@ export const useProjectStore = create<ProjectState>((set, get) => {
     setFilePath: (path) => set({ filePath: path }),
 
     markClean: () => set({ isDirty: false }),
+
+    addExportProfile: (profile) => {
+      const profileId = uuidv4()
+      const newProfile: ExportProfile = {
+        ...profile,
+        id: profileId,
+        symbolIds: Array.from(new Set(profile.symbolIds))
+      }
+      setWithHistory((state) => ({
+        project: {
+          ...state.project,
+          exportProfiles: [...(state.project.exportProfiles ?? []), newProfile],
+          updatedAt: new Date().toISOString()
+        },
+        isDirty: true
+      }))
+      return profileId
+    },
+
+    removeExportProfile: (profileId) =>
+      setWithHistory((state) => ({
+        project: {
+          ...state.project,
+          exportProfiles: (state.project.exportProfiles ?? []).filter(
+            (profile) => profile.id !== profileId
+          ),
+          updatedAt: new Date().toISOString()
+        },
+        isDirty: true
+      })),
 
     addFloor: (name) => {
       const newFloor: Floor = {

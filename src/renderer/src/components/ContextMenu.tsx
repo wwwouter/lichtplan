@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useUIStore } from '../stores/useUIStore'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
@@ -8,11 +8,13 @@ import {
   DIAGRAM_LINE_EQUAL_LENGTH_LABEL,
   DIAGRAM_LINE_SYMBOL_ID
 } from './diagramLine'
+import { clampContextMenuPosition } from './contextMenuPosition'
 import { TEXT_SYMBOL_ID } from './symbolVisibility'
 
 export function ContextMenu() {
   const { contextMenu, setContextMenu } = useUIStore()
   const menuRef = useRef<HTMLDivElement>(null)
+  const [menuPosition, setMenuPosition] = useState({ left: 0, top: 0 })
   const activeFloorId = useProjectStore((s) => s.activeFloorId)
   const updateSymbol = useProjectStore((s) => s.updateSymbol)
   const removeSymbol = useProjectStore((s) => s.removeSymbol)
@@ -34,6 +36,22 @@ export function ContextMenu() {
     window.addEventListener('click', handleClick)
     return () => window.removeEventListener('click', handleClick)
   }, [setContextMenu])
+
+  useLayoutEffect(() => {
+    if (!contextMenu || !menuRef.current) return
+
+    const rect = menuRef.current.getBoundingClientRect()
+    setMenuPosition(
+      clampContextMenuPosition(
+        contextMenu.x,
+        contextMenu.y,
+        rect.width,
+        rect.height,
+        window.innerWidth,
+        window.innerHeight
+      )
+    )
+  }, [contextMenu])
 
   if (!contextMenu) return null
 
@@ -142,7 +160,7 @@ export function ContextMenu() {
     <div
       ref={menuRef}
       className="context-menu"
-      style={{ left: contextMenu.x, top: contextMenu.y }}
+      style={{ left: menuPosition.left, top: menuPosition.top }}
       onClick={(e) => e.stopPropagation()}
     >
       {!isTextSymbol && !isDiagramLine && (

@@ -21,6 +21,14 @@ export const SYMBOLS_BY_CATEGORY: Record<SymbolCategory, SymbolDefinition[]> = {
   [SymbolCategory.Annotaties]: annotationSymbols
 }
 
+export const PALETTE_SYMBOLS_BY_CATEGORY: Record<SymbolCategory, SymbolDefinition[]> = {
+  [SymbolCategory.Verlichting]: lightingSymbols,
+  [SymbolCategory.Elektra]: electricalSymbols,
+  [SymbolCategory.Schakelaars]: switchSymbols,
+  [SymbolCategory.Overig]: otherSymbols.filter((symbol) => symbol.id !== 'bewegingssensor'),
+  [SymbolCategory.Annotaties]: annotationSymbols
+}
+
 export const getSymbolById = (id: string): SymbolDefinition | undefined =>
   ALL_SYMBOLS.find((s) => s.id === id)
 

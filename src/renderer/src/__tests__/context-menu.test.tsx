@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ContextMenu } from '../components/ContextMenu'
+import { clampContextMenuPosition } from '../components/contextMenuPosition'
 import {
   DIAGRAM_LINE_EQUAL_LENGTH_LABEL,
   DIAGRAM_LINE_SYMBOL_ID
@@ -66,5 +67,19 @@ describe('ContextMenu', () => {
     expect(
       screen.queryByRole('button', { name: `Label ${DIAGRAM_LINE_EQUAL_LENGTH_LABEL}` })
     ).not.toBeInTheDocument()
+  })
+
+  it('clamps the menu position inside the viewport', () => {
+    expect(clampContextMenuPosition(900, 700, 220, 260, 1000, 800)).toEqual({
+      left: 772,
+      top: 532
+    })
+  })
+
+  it('keeps a margin when the requested position is outside the top-left viewport', () => {
+    expect(clampContextMenuPosition(-20, -30, 220, 260, 1000, 800)).toEqual({
+      left: 8,
+      top: 8
+    })
   })
 })
