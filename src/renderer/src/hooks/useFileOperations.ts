@@ -8,6 +8,7 @@ import {
   getFloorPlanDownloadFileName,
   loadFloorPlanImage
 } from '../services/imageService'
+import { refreshTimestampSuffix } from '../services/saveFileName'
 
 export function useFileOperations() {
   const { project, filePath, activeFloorId, setProject, setFilePath, markClean, newProject, setFloorImage } =
@@ -55,7 +56,8 @@ export function useFileOperations() {
 
     try {
       const data = serializeProject(project)
-      const savedPath = await window.api.saveProject(data, filePath ?? undefined)
+      const saveFilePath = refreshTimestampSuffix(filePath ?? undefined)
+      const savedPath = await window.api.saveProject(data, saveFilePath)
       if (savedPath) {
         setFilePath(savedPath)
         markClean()

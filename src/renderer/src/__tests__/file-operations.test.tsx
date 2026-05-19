@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFileOperations } from '../hooks/useFileOperations'
 import { useProjectStore } from '../stores/useProjectStore'
 import { useUIStore } from '../stores/useUIStore'
@@ -10,6 +10,10 @@ describe('file operations', () => {
     vi.mocked(window.api.saveProject).mockReset()
     useProjectStore.getState().newProject()
     useUIStore.setState({ notification: null })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('shows a visible success message when opening a project', async () => {
@@ -65,6 +69,24 @@ describe('file operations', () => {
 
     expect(useUIStore.getState().notification).toBeNull()
     expect(useProjectStore.getState().filePath).toBe('/downloads/project.lichtplan')
+  })
+
+  it('replaces a timestamp suffix in the current file name when saving', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 4, 19, 12, 34, 56))
+    useProjectStore.getState().setFilePath('/downloads/woning-2026-05-18T09:15.lichtplan')
+    vi.mocked(window.api.saveProject).mockImplementation(async (_data, filePath) => filePath ?? null)
+    const { result } = renderHook(() => useFileOperations())
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(window.api.saveProject).toHaveBeenCalledWith(
+      expect.any(String),
+      '/downloads/woning-2026-05-19T12:34.lichtplan'
+    )
+    expect(useProjectStore.getState().filePath).toBe('/downloads/woning-2026-05-19T12:34.lichtplan')
   })
 
   it('shows a visible error message when saving fails', async () => {
