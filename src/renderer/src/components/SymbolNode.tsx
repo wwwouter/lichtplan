@@ -8,6 +8,7 @@ import { useProjectStore } from '../stores/useProjectStore'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import { useUIStore } from '../stores/useUIStore'
 import { getSymbolLabelText } from './labelLayout'
+import { getGroupBadgePosition } from './symbolBadges'
 import {
   getPlacedSymbolBounds,
   getPlacedSymbolDetailScale,
@@ -145,6 +146,7 @@ export function SymbolNode({
               offsetX={iconBounds.offsetX}
               offsetY={iconBounds.offsetY}
               definitionWidth={iconBounds.width}
+              category={definition.category}
               scale={detailScale}
             />
           )}
@@ -578,18 +580,23 @@ function GroupBadge({
   offsetX,
   offsetY,
   definitionWidth,
+  category,
   scale
 }: {
   group: string
   offsetX: number
   offsetY: number
   definitionWidth: number
+  category: SymbolDefinition['category']
   scale: number
 }) {
-  const radius = 7 * scale
-  // bottom-left at 12.5% of icon width
-  const x = -offsetX + definitionWidth * 0.125
-  const y = offsetY - radius
+  const { x, y, radius } = getGroupBadgePosition({
+    category,
+    offsetX,
+    offsetY,
+    definitionWidth,
+    scale
+  })
   const display = group.slice(0, 2).toUpperCase()
 
   return (
