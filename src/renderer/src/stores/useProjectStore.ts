@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
 import { Project, Floor, PlacedSymbol, FloorPlanImage, ExportProfile } from '../types/project'
 import { DIAGRAM_LINE_SYMBOL_ID } from '../components/diagramLine'
+import { createDefaultExportProfiles } from '../services/pdfExportProfiles'
 
 const MAX_HISTORY = 50
 
@@ -24,6 +25,7 @@ interface ProjectState {
   setFilePath: (path: string | null) => void
   markClean: () => void
   addExportProfile: (profile: Omit<ExportProfile, 'id'>) => string
+  updateExportProfile: (profileId: string, profile: Omit<ExportProfile, 'id'>) => void
   removeExportProfile: (profileId: string) => void
 
   // Floor actions
@@ -57,7 +59,7 @@ const createDefaultProject = (): Project => {
   return {
     id: uuidv4(),
     name: 'Nieuw project',
-    exportProfiles: [],
+    exportProfiles: createDefaultExportProfiles(),
     floors: [
       {
         id: floorId,
@@ -229,7 +231,7 @@ export const useProjectStore = create<ProjectState>((set, get) => {
       const newProfile: ExportProfile = {
         ...profile,
         id: profileId,
-        symbolIds: Array.from(new Set(profile.symbolIds))
+        rules: profile.rules
       }
       setWithHistory((state) => ({
         project: {
@@ -241,6 +243,18 @@ export const useProjectStore = create<ProjectState>((set, get) => {
       }))
       return profileId
     },
+
+    updateExportProfile: (profileId, profile) =>
+      setWithHistory((state) => ({
+        project: {
+          ...state.project,
+          exportProfiles: (state.project.exportProfiles ?? []).map((item) =>
+            item.id === profileId ? { ...profile, id: profileId } : item
+          ),
+          updatedAt: new Date().toISOString()
+        },
+        isDirty: true
+      })),
 
     removeExportProfile: (profileId) =>
       setWithHistory((state) => ({

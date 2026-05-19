@@ -10,7 +10,17 @@ export interface Project {
 export interface ExportProfile {
   id: string
   name: string
-  symbolIds: string[]
+  rules: ExportProfileRule[]
+}
+
+export type ExportProfileRuleField = 'symbolId' | 'subject'
+export type ExportProfileRuleOperator = 'is' | 'is-not'
+
+export interface ExportProfileRule {
+  id: string
+  field: ExportProfileRuleField
+  operator: ExportProfileRuleOperator
+  values: string[]
 }
 
 export interface Floor {
@@ -49,6 +59,7 @@ export interface PlacedSymbol {
   location?: string
   description?: string
   question?: string
+  subject?: string
   itemId?: string
   forSymbolId?: string
   diagramLine?: DiagramLine

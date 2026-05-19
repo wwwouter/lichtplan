@@ -34,6 +34,7 @@ export function FloorCanvas({ stageRef }: Props) {
   const setContextMenu = useUIStore((s) => s.setContextMenu)
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
   const hiddenSymbolIds = useUIStore((s) => s.hiddenSymbolIds)
+  const pdfExportVisibleSymbolIds = useUIStore((s) => s.pdfExportVisibleSymbolIds)
   const showItemId = useUIStore((s) => s.showItemId)
   const showLabel = useUIStore((s) => s.showLabel)
   const interactionMode = useUIStore((s) => s.interactionMode)
@@ -235,11 +236,18 @@ export function FloorCanvas({ stageRef }: Props) {
       ? 'crosshair'
       : undefined
 
+  const isCanvasSymbolVisible = useCallback(
+    (symbol: PlacedSymbol) =>
+      isPlacedSymbolVisible(symbol, hiddenSymbolIds) &&
+      (!pdfExportVisibleSymbolIds || pdfExportVisibleSymbolIds.has(symbol.id)),
+    [hiddenSymbolIds, pdfExportVisibleSymbolIds]
+  )
+
   const smartLabelLayout = useMemo(() => {
     if (!floor) return new Map<string, { offsetX: number; offsetY: number; moved: boolean }>()
 
     const layoutItems: LabelLayoutItem[] = floor.symbols.flatMap((sym) => {
-      if (!isPlacedSymbolVisible(sym, hiddenSymbolIds)) return []
+      if (!isCanvasSymbolVisible(sym)) return []
       const def = getSymbolById(sym.symbolId)
       if (!def) return []
       const bounds = getPlacedSymbolBounds(def)
@@ -261,16 +269,16 @@ export function FloorCanvas({ stageRef }: Props) {
     })
 
     return computeSmartLabelLayout(layoutItems, showItemId, showLabel)
-  }, [floor, hiddenSymbolIds, showItemId, showLabel])
+  }, [floor, isCanvasSymbolVisible, showItemId, showLabel])
 
   const hoveredSymbol = useMemo(() => {
     if (!floor || !hoveredSymbolId) return null
     const symbol = floor.symbols.find((sym) => sym.id === hoveredSymbolId)
-    if (!symbol || !isPlacedSymbolVisible(symbol, hiddenSymbolIds)) return null
+    if (!symbol || !isCanvasSymbolVisible(symbol)) return null
     const definition = getSymbolById(symbol.symbolId)
     if (!definition) return null
     return { symbol, definition }
-  }, [floor, hoveredSymbolId, hiddenSymbolIds])
+  }, [floor, hoveredSymbolId, isCanvasSymbolVisible])
 
   if (!floor) {
     return (
@@ -311,7 +319,7 @@ export function FloorCanvas({ stageRef }: Props) {
         <Layer listening={interactionMode === 'default'}>
           {floor.floorPlanImage && <FloorPlanImageLayer image={floor.floorPlanImage} />}
           {orderSymbolsForCanvas(
-            floor.symbols.filter((sym) => isPlacedSymbolVisible(sym, hiddenSymbolIds)),
+            floor.symbols.filter(isCanvasSymbolVisible),
             selectedSymbolId
           ).map((sym) => {
             const def = getSymbolById(sym.symbolId)
@@ -393,7 +401,7 @@ export function FloorCanvas({ stageRef }: Props) {
         </Layer>
         <Layer listening={false}>
           {floor.symbols.map((sym) => {
-            if (!sym.question?.trim() || !isPlacedSymbolVisible(sym, hiddenSymbolIds)) return null
+            if (!sym.question?.trim() || !isCanvasSymbolVisible(sym)) return null
             const def = getSymbolById(sym.symbolId)
             if (!def) return null
             return <SymbolQuestionMarker key={sym.id} symbol={sym} definition={def} />

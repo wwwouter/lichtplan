@@ -14,6 +14,7 @@ import { LocationDialog } from './components/LocationDialog'
 import { IdDialog } from './components/IdDialog'
 import { DescriptionDialog } from './components/DescriptionDialog'
 import { QuestionDialog } from './components/QuestionDialog'
+import { SubjectDialog } from './components/SubjectDialog'
 import { ForTypeDialog } from './components/ForTypeDialog'
 import { NotificationToast } from './components/NotificationToast'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
@@ -94,6 +95,7 @@ function App(): ReactElement {
       <IdDialog />
       <DescriptionDialog />
       <QuestionDialog />
+      <SubjectDialog />
       <ForTypeDialog />
       <LoadingOverlay />
       <NotificationToast />

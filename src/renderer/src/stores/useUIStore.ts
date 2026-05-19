@@ -35,6 +35,11 @@ interface QuestionDialogState {
   currentQuestion: string
 }
 
+interface SubjectDialogState {
+  symbolId: string
+  currentSubject: string
+}
+
 interface ForTypeDialogState {
   symbolId: string
   currentForSymbolId?: string
@@ -61,9 +66,12 @@ interface UIState {
   idDialog: IdDialogState | null
   descriptionDialog: DescriptionDialogState | null
   questionDialog: QuestionDialogState | null
+  subjectDialog: SubjectDialogState | null
   forTypeDialog: ForTypeDialogState | null
   itemsListOpen: boolean
   pdfExportDialogOpen: boolean
+  pdfProfilesDialogOpen: boolean
+  pdfExportVisibleSymbolIds: Set<string> | null
   expandedCategories: Record<string, boolean>
   hiddenSymbolIds: Set<string>
   showItemId: boolean
@@ -82,9 +90,12 @@ interface UIState {
   setIdDialog: (dialog: IdDialogState | null) => void
   setDescriptionDialog: (dialog: DescriptionDialogState | null) => void
   setQuestionDialog: (dialog: QuestionDialogState | null) => void
+  setSubjectDialog: (dialog: SubjectDialogState | null) => void
   setForTypeDialog: (dialog: ForTypeDialogState | null) => void
   setItemsListOpen: (open: boolean) => void
   setPdfExportDialogOpen: (open: boolean) => void
+  setPdfProfilesDialogOpen: (open: boolean) => void
+  setPdfExportVisibleSymbolIds: (symbolIds: Set<string> | null) => void
   toggleCategory: (category: string) => void
   toggleSymbolVisibility: (symbolId: string) => void
   setLoading: (message: string | null) => void
@@ -182,9 +193,12 @@ export const useUIStore = create<UIState>((set) => ({
   idDialog: null,
   descriptionDialog: null,
   questionDialog: null,
+  subjectDialog: null,
   forTypeDialog: null,
   itemsListOpen: false,
   pdfExportDialogOpen: false,
+  pdfProfilesDialogOpen: false,
+  pdfExportVisibleSymbolIds: null,
   expandedCategories: {
     Verlichting: true,
     Elektra: true,
@@ -217,11 +231,17 @@ export const useUIStore = create<UIState>((set) => ({
 
   setQuestionDialog: (dialog) => set({ questionDialog: dialog }),
 
+  setSubjectDialog: (dialog) => set({ subjectDialog: dialog }),
+
   setForTypeDialog: (dialog) => set({ forTypeDialog: dialog }),
 
   setItemsListOpen: (open) => set({ itemsListOpen: open }),
 
   setPdfExportDialogOpen: (open) => set({ pdfExportDialogOpen: open }),
+
+  setPdfProfilesDialogOpen: (open) => set({ pdfProfilesDialogOpen: open }),
+
+  setPdfExportVisibleSymbolIds: (symbolIds) => set({ pdfExportVisibleSymbolIds: symbolIds }),
 
   toggleCategory: (category) =>
     set((state) => ({

@@ -59,10 +59,6 @@ export function useFileOperations() {
       if (savedPath) {
         setFilePath(savedPath)
         markClean()
-        ui.setNotification({
-          type: 'success',
-          message: `Project opgeslagen: ${getDisplayFileName(savedPath)}.`
-        })
       } else {
         ui.setNotification({
           type: 'error',

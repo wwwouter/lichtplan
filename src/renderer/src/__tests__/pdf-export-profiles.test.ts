@@ -1,40 +1,95 @@
 import { describe, expect, it } from 'vitest'
 import {
   CURRENT_VISIBILITY_EXPORT_PROFILE_ID,
-  getHiddenSymbolIdsForExportProfile,
+  createDefaultExportProfiles,
+  createRule,
+  getVisibleSymbolIdsForExportProfile,
+  resolvePdfExportOptions,
   resolvePdfExportProfiles
 } from '../services/pdfExportProfiles'
+import type { PlacedSymbol } from '../types/project'
+
+function symbol(
+  id: string,
+  symbolId: string,
+  overrides: Partial<PlacedSymbol> = {}
+): PlacedSymbol {
+  return {
+    id,
+    symbolId,
+    x: 0,
+    y: 0,
+    rotation: 0,
+    ...overrides
+  }
+}
 
 describe('PDF export profiles', () => {
-  it('keeps current visibility unchanged for the current-visibility profile', () => {
-    const profile = resolvePdfExportProfiles().find(
+  it('keeps current visibility unfiltered for the current-visibility profile', () => {
+    const profile = resolvePdfExportOptions().find(
       (item) => item.id === CURRENT_VISIBILITY_EXPORT_PROFILE_ID
     )!
 
-    expect(getHiddenSymbolIdsForExportProfile(profile, new Set(['wandlamp']))).toEqual(
-      new Set(['wandlamp'])
+    expect(
+      getVisibleSymbolIdsForExportProfile(
+        [symbol('lamp-1', 'wandlamp')],
+        profile,
+        new Set(['wandlamp'])
+      )
+    ).toBeNull()
+  })
+
+  it('filters beamer profile by subject across icons, lines and text', () => {
+    const profile = resolvePdfExportProfiles(createDefaultExportProfiles()).find(
+      (item) => item.id === 'beamer'
+    )!
+    const visible = getVisibleSymbolIdsForExportProfile(
+      [
+        symbol('lamp-1', 'inbouwspot', { subject: 'beamer' }),
+        symbol('line-1', 'lijn', { subject: 'Beamer' }),
+        symbol('text-1', 'tekst', { subject: 'beamer' }),
+        symbol('lamp-2', 'inbouwspot')
+      ],
+      profile,
+      new Set()
     )
+
+    expect(visible).toEqual(new Set(['lamp-1', 'line-1', 'text-1']))
   })
 
-  it('hides regular symbol types outside the selected profile while preserving base hidden items', () => {
-    const profile = resolvePdfExportProfiles().find((item) => item.id === '12v')!
-    const hidden = getHiddenSymbolIdsForExportProfile(profile, new Set(['tekst']))
+  it('filters lighting profile by type and excludes beamer subject', () => {
+    const profile = resolvePdfExportProfiles(createDefaultExportProfiles()).find(
+      (item) => item.id === 'lighting-switches'
+    )!
+    const visible = getVisibleSymbolIdsForExportProfile(
+      [
+        symbol('lamp-1', 'inbouwspot'),
+        symbol('switch-1', 'dimmer'),
+        symbol('line-1', 'lijn', { forSymbolId: 'dimmer' }),
+        symbol('beamer-lamp', 'inbouwspot', { subject: 'beamer' }),
+        symbol('wcd-1', 'geaard-stopcontact')
+      ],
+      profile,
+      new Set()
+    )
 
-    expect(hidden.has('12v-lasdoos')).toBe(false)
-    expect(hidden.has('geaard-stopcontact')).toBe(true)
-    expect(hidden.has('lichtpunt-plafond')).toBe(true)
-    expect(hidden.has('tekst')).toBe(true)
+    expect(visible).toEqual(new Set(['lamp-1', 'switch-1', 'line-1']))
   })
 
-  it('includes custom profiles after the built-in profiles', () => {
+  it('resolves only project profiles without fixed built-ins', () => {
     const profiles = resolvePdfExportProfiles([
-      { id: 'custom-1', name: 'Eigen profiel', symbolIds: ['cat6a-contactdoos'] }
+      {
+        id: 'custom-1',
+        name: 'Eigen profiel',
+        rules: [createRule('subject', 'is', ['cameras'])]
+      }
     ])
 
-    expect(profiles.at(-1)).toMatchObject({
+    expect(profiles).toHaveLength(1)
+    expect(profiles[0]).toMatchObject({
       id: 'custom-1',
       name: 'Eigen profiel',
-      symbolIds: ['cat6a-contactdoos'],
+      rules: [createRule('subject', 'is', ['cameras'])],
       builtIn: false
     })
   })

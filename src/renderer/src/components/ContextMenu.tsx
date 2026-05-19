@@ -29,6 +29,7 @@ export function ContextMenu() {
   const setIdDialog = useUIStore((s) => s.setIdDialog)
   const setDescriptionDialog = useUIStore((s) => s.setDescriptionDialog)
   const setQuestionDialog = useUIStore((s) => s.setQuestionDialog)
+  const setSubjectDialog = useUIStore((s) => s.setSubjectDialog)
   const setForTypeDialog = useUIStore((s) => s.setForTypeDialog)
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export function ContextMenu() {
   const hasId = Boolean(itemId && itemId.length > 0)
   const hasDescription = Boolean(symbol?.description && symbol.description.length > 0)
   const hasQuestion = Boolean(symbol?.question && symbol.question.length > 0)
+  const hasSubject = Boolean(symbol?.subject && symbol.subject.length > 0)
 
   const handleRotate = (degrees: number) => {
     if (!symbol) return
@@ -130,6 +132,14 @@ export function ContextMenu() {
     setContextMenu(null)
   }
 
+  const handleOpenSubjectDialog = () => {
+    setSubjectDialog({
+      symbolId: contextMenu.symbolId,
+      currentSubject: symbol?.subject ?? ''
+    })
+    setContextMenu(null)
+  }
+
   const handleOpenForTypeDialog = () => {
     setForTypeDialog({
       symbolId: contextMenu.symbolId,
@@ -183,6 +193,9 @@ export function ContextMenu() {
       )}
       <button className="context-menu-item" onClick={handleOpenGroupDialog}>
         {hasGroup ? 'Groep bewerken' : 'Groep toevoegen'}
+      </button>
+      <button className="context-menu-item" onClick={handleOpenSubjectDialog}>
+        {hasSubject ? 'Onderwerp bewerken' : 'Onderwerp toevoegen'}
       </button>
       {!isTextSymbol && (
         <button className="context-menu-item" onClick={handleOpenLocationDialog}>

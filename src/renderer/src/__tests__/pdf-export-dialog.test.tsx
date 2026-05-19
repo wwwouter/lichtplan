@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { PdfExportDialog } from '../components/PdfExportDialog'
-import { CURRENT_VISIBILITY_EXPORT_PROFILE_ID } from '../services/pdfExportProfiles'
+import {
+  CURRENT_VISIBILITY_EXPORT_PROFILE_ID,
+  createDefaultExportProfiles
+} from '../services/pdfExportProfiles'
 import type { Floor } from '../types/project'
 
 const floors: Floor[] = [
@@ -29,6 +32,7 @@ describe('PdfExportDialog', () => {
       <PdfExportDialog
         floors={floors}
         activeFloorId="floor-1"
+        exportProfiles={createDefaultExportProfiles()}
         isExporting={false}
         onCancel={vi.fn()}
         onExport={onExport}
@@ -61,6 +65,7 @@ describe('PdfExportDialog', () => {
       <PdfExportDialog
         floors={floors}
         activeFloorId="floor-1"
+        exportProfiles={createDefaultExportProfiles()}
         isExporting={false}
         onCancel={vi.fn()}
         onExport={onExport}
@@ -86,6 +91,7 @@ describe('PdfExportDialog', () => {
       <PdfExportDialog
         floors={floors}
         activeFloorId="floor-1"
+        exportProfiles={createDefaultExportProfiles()}
         isExporting={false}
         onCancel={vi.fn()}
         onExport={onExport}
@@ -128,13 +134,14 @@ describe('PdfExportDialog', () => {
       <PdfExportDialog
         floors={floors}
         activeFloorId="floor-1"
+        exportProfiles={createDefaultExportProfiles()}
         isExporting={false}
         onCancel={vi.fn()}
         onExport={onExport}
       />
     )
 
-    fireEvent.click(screen.getAllByLabelText('Lampen + schakelaars')[0])
+    fireEvent.click(screen.getAllByLabelText('Verlichting')[0])
     fireEvent.click(screen.getByRole('button', { name: 'Exporteren' }))
 
     expect(onExport).toHaveBeenCalledWith(
@@ -147,29 +154,5 @@ describe('PdfExportDialog', () => {
       'a2',
       200
     )
-  })
-
-  it('creates custom export profiles from selected symbol types', () => {
-    const onAddProfile = vi.fn().mockReturnValue('custom-profile')
-
-    render(
-      <PdfExportDialog
-        floors={floors}
-        activeFloorId="floor-1"
-        isExporting={false}
-        onCancel={vi.fn()}
-        onAddProfile={onAddProfile}
-        onExport={vi.fn()}
-      />
-    )
-
-    fireEvent.change(screen.getByLabelText('Profielnaam'), { target: { value: 'Beamer extra' } })
-    fireEvent.click(screen.getByLabelText('12V lasdoos'))
-    fireEvent.click(screen.getByRole('button', { name: 'Profiel toevoegen' }))
-
-    expect(onAddProfile).toHaveBeenCalledWith({
-      name: 'Beamer extra',
-      symbolIds: ['12v-lasdoos']
-    })
   })
 })

@@ -55,7 +55,7 @@ describe('file operations', () => {
     expect(useUIStore.getState().notification?.message).toContain('at showOpenFilePicker')
   })
 
-  it('shows a visible success message when saving starts', async () => {
+  it('does not show a success message when saving succeeds', async () => {
     vi.mocked(window.api.saveProject).mockResolvedValue('/downloads/project.lichtplan')
     const { result } = renderHook(() => useFileOperations())
 
@@ -63,11 +63,8 @@ describe('file operations', () => {
       await result.current.handleSave()
     })
 
-    expect(useUIStore.getState().notification).toMatchObject({
-      type: 'success',
-      message: expect.stringContaining('project.lichtplan')
-    })
-    expect(useUIStore.getState().notification?.message).toContain('Project opgeslagen')
+    expect(useUIStore.getState().notification).toBeNull()
+    expect(useProjectStore.getState().filePath).toBe('/downloads/project.lichtplan')
   })
 
   it('shows a visible error message when saving fails', async () => {

@@ -15,8 +15,9 @@ import {
 } from '../services/exportService'
 import {
   CURRENT_VISIBILITY_EXPORT_PROFILE_ID,
-  getHiddenSymbolIdsForExportProfile,
-  resolvePdfExportProfiles,
+  getVisibleSymbolIdsForExportProfile,
+  isPlacedSymbolVisibleForExportProfile,
+  resolvePdfExportOptions,
   type PdfExportSelection,
   type ResolvedExportProfile
 } from '../services/pdfExportProfiles'
@@ -26,6 +27,7 @@ import { CATEGORY_COLORS, getSymbolById, SymbolCategory } from '../symbols'
 import type { Floor, Project } from '../types/project'
 import { FloorPlanScaleDialog } from './FloorPlanScaleDialog'
 import { PdfExportDialog } from './PdfExportDialog'
+import { PdfProfilesDialog } from './PdfProfilesDialog'
 import { isPlacedSymbolVisible } from './symbolVisibility'
 
 interface Props {
@@ -56,6 +58,7 @@ export function Toolbar({ stageRef }: Props) {
   const setFloorImageGrayscale = useProjectStore((s) => s.setFloorImageGrayscale)
   const scaleFloorPlanImage = useProjectStore((s) => s.scaleFloorPlanImage)
   const addExportProfile = useProjectStore((s) => s.addExportProfile)
+  const updateExportProfile = useProjectStore((s) => s.updateExportProfile)
   const removeExportProfile = useProjectStore((s) => s.removeExportProfile)
   const canUndo = useProjectStore((s) => s.canUndo)
   const canRedo = useProjectStore((s) => s.canRedo)
@@ -67,6 +70,8 @@ export function Toolbar({ stageRef }: Props) {
   const setItemsListOpen = useUIStore((s) => s.setItemsListOpen)
   const pdfExportDialogOpen = useUIStore((s) => s.pdfExportDialogOpen)
   const setPdfExportDialogOpen = useUIStore((s) => s.setPdfExportDialogOpen)
+  const pdfProfilesDialogOpen = useUIStore((s) => s.pdfProfilesDialogOpen)
+  const setPdfProfilesDialogOpen = useUIStore((s) => s.setPdfProfilesDialogOpen)
   const setLoading = useUIStore((s) => s.setLoading)
   const hiddenSymbolIds = useUIStore((s) => s.hiddenSymbolIds)
   const [isExportingPDF, setIsExportingPDF] = useState(false)
@@ -184,7 +189,7 @@ export function Toolbar({ stageRef }: Props) {
 
     try {
       const snapshots: FloorPdfSnapshot[] = []
-      const profiles = resolvePdfExportProfiles(projectState.project.exportProfiles)
+      const profiles = resolvePdfExportOptions(projectState.project.exportProfiles)
 
       for (const selection of selections) {
         const floor = project.floors.find((f) => f.id === selection.floorId)
@@ -192,11 +197,12 @@ export function Toolbar({ stageRef }: Props) {
         if (!profile) continue
         if (!floor) continue
 
-        const exportHiddenSymbolIds = getHiddenSymbolIdsForExportProfile(
+        const visibleSymbolIds = getVisibleSymbolIdsForExportProfile(
+          floor.symbols,
           profile,
           originalHiddenSymbolIds
         )
-        const bounds = getFloorBounds(floor, exportHiddenSymbolIds)
+        const bounds = getFloorBounds(floor, originalHiddenSymbolIds, visibleSymbolIds)
         const resolvedOrientation = resolvePdfPageOrientation(
           bounds.width,
           bounds.height,
@@ -206,7 +212,7 @@ export function Toolbar({ stageRef }: Props) {
 
         setActiveFloor(floor.id)
         setSelectedSymbol(null)
-        useUIStore.setState({ hiddenSymbolIds: exportHiddenSymbolIds })
+        useUIStore.setState({ pdfExportVisibleSymbolIds: visibleSymbolIds })
         await waitForStagePaint(stage)
 
         renderStageForPrint(stage, bounds, renderSize)
@@ -241,7 +247,10 @@ export function Toolbar({ stageRef }: Props) {
       await window.api.exportPDF(pdfData, fileName)
       setPdfExportDialogOpen(false)
     } finally {
-      useUIStore.setState({ hiddenSymbolIds: originalHiddenSymbolIds })
+      useUIStore.setState({
+        hiddenSymbolIds: originalHiddenSymbolIds,
+        pdfExportVisibleSymbolIds: null
+      })
       setActiveFloor(originalFloorId)
       setStagePosition(originalStage.x, originalStage.y)
       setScale(originalStage.scale)
@@ -384,6 +393,9 @@ export function Toolbar({ stageRef }: Props) {
         <div className="toolbar-separator" />
 
         <div className="toolbar-group">
+          <button onClick={() => setPdfProfilesDialogOpen(true)} title="PDF profielen beheren">
+            <span>Profielen</span>
+          </button>
           <button onClick={handleExportPDF} title="Exporteren als PDF">
             <span>PDF</span>
           </button>
@@ -397,9 +409,17 @@ export function Toolbar({ stageRef }: Props) {
           exportProfiles={project.exportProfiles}
           isExporting={isExportingPDF}
           onCancel={() => setPdfExportDialogOpen(false)}
-          onAddProfile={addExportProfile}
-          onRemoveProfile={removeExportProfile}
           onExport={handleConfirmExportPDF}
+        />
+      )}
+      {pdfProfilesDialogOpen && (
+        <PdfProfilesDialog
+          floors={project.floors}
+          exportProfiles={project.exportProfiles}
+          onCancel={() => setPdfProfilesDialogOpen(false)}
+          onAddProfile={addExportProfile}
+          onUpdateProfile={updateExportProfile}
+          onRemoveProfile={removeExportProfile}
         />
       )}
       {floorPlanScaleDialogOpen && activeFloor?.floorPlanImage && (
@@ -415,7 +435,8 @@ export function Toolbar({ stageRef }: Props) {
 
 function getFloorBounds(
   floor: Floor,
-  hiddenSymbolIds: Set<string>
+  hiddenSymbolIds: Set<string>,
+  visibleSymbolIds: Set<string> | null = null
 ): { x: number; y: number; width: number; height: number } {
   const margin = 40
   let minX = Infinity
@@ -432,6 +453,7 @@ function getFloorBounds(
 
   for (const symbol of floor.symbols) {
     if (!isPlacedSymbolVisible(symbol, hiddenSymbolIds)) continue
+    if (visibleSymbolIds && !visibleSymbolIds.has(symbol.id)) continue
     minX = Math.min(minX, symbol.x - margin)
     minY = Math.min(minY, symbol.y - margin)
     maxX = Math.max(maxX, symbol.x + margin)
@@ -522,9 +544,8 @@ function buildLegendItemsForExportSelections(
     const profile = profiles.find((item) => item.id === selection.profileId)
     if (!floor || !profile) return
 
-    const hiddenSymbolIds = getHiddenSymbolIdsForExportProfile(profile, baseHiddenSymbolIds)
     floor.symbols.forEach((symbol) => {
-      if (!isPlacedSymbolVisible(symbol, hiddenSymbolIds)) return
+      if (!isPlacedSymbolVisibleForExportProfile(symbol, profile, baseHiddenSymbolIds)) return
       counts.set(symbol.symbolId, (counts.get(symbol.symbolId) ?? 0) + 1)
     })
   })
