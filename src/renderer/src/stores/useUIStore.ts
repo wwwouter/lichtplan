@@ -71,6 +71,7 @@ interface UIState {
   itemsListOpen: boolean
   pdfExportDialogOpen: boolean
   pdfProfilesDialogOpen: boolean
+  profileVisibilitySymbolIds: Set<string> | null
   pdfExportVisibleSymbolIds: Set<string> | null
   expandedCategories: Record<string, boolean>
   hiddenSymbolIds: Set<string>
@@ -95,6 +96,7 @@ interface UIState {
   setItemsListOpen: (open: boolean) => void
   setPdfExportDialogOpen: (open: boolean) => void
   setPdfProfilesDialogOpen: (open: boolean) => void
+  setProfileVisibilitySymbolIds: (symbolIds: Set<string> | null) => void
   setPdfExportVisibleSymbolIds: (symbolIds: Set<string> | null) => void
   toggleCategory: (category: string) => void
   toggleSymbolVisibility: (symbolId: string) => void
@@ -198,6 +200,7 @@ export const useUIStore = create<UIState>((set) => ({
   itemsListOpen: false,
   pdfExportDialogOpen: false,
   pdfProfilesDialogOpen: false,
+  profileVisibilitySymbolIds: null,
   pdfExportVisibleSymbolIds: null,
   expandedCategories: {
     Verlichting: true,
@@ -240,6 +243,8 @@ export const useUIStore = create<UIState>((set) => ({
   setPdfExportDialogOpen: (open) => set({ pdfExportDialogOpen: open }),
 
   setPdfProfilesDialogOpen: (open) => set({ pdfProfilesDialogOpen: open }),
+
+  setProfileVisibilitySymbolIds: (symbolIds) => set({ profileVisibilitySymbolIds: symbolIds }),
 
   setPdfExportVisibleSymbolIds: (symbolIds) => set({ pdfExportVisibleSymbolIds: symbolIds }),
 

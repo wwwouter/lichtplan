@@ -34,6 +34,7 @@ export function FloorCanvas({ stageRef }: Props) {
   const setContextMenu = useUIStore((s) => s.setContextMenu)
   const setLabelDialog = useUIStore((s) => s.setLabelDialog)
   const hiddenSymbolIds = useUIStore((s) => s.hiddenSymbolIds)
+  const profileVisibilitySymbolIds = useUIStore((s) => s.profileVisibilitySymbolIds)
   const pdfExportVisibleSymbolIds = useUIStore((s) => s.pdfExportVisibleSymbolIds)
   const showItemId = useUIStore((s) => s.showItemId)
   const showLabel = useUIStore((s) => s.showLabel)
@@ -239,8 +240,9 @@ export function FloorCanvas({ stageRef }: Props) {
   const isCanvasSymbolVisible = useCallback(
     (symbol: PlacedSymbol) =>
       isPlacedSymbolVisible(symbol, hiddenSymbolIds) &&
+      (!profileVisibilitySymbolIds || profileVisibilitySymbolIds.has(symbol.id)) &&
       (!pdfExportVisibleSymbolIds || pdfExportVisibleSymbolIds.has(symbol.id)),
-    [hiddenSymbolIds, pdfExportVisibleSymbolIds]
+    [hiddenSymbolIds, profileVisibilitySymbolIds, pdfExportVisibleSymbolIds]
   )
 
   const smartLabelLayout = useMemo(() => {

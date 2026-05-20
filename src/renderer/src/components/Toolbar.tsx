@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCanvasStore } from '../stores/useCanvasStore'
 import { useFileOperations } from '../hooks/useFileOperations'
 import type Konva from 'konva'
@@ -28,6 +28,7 @@ import type { Floor, Project } from '../types/project'
 import { FloorPlanScaleDialog } from './FloorPlanScaleDialog'
 import { PdfExportDialog } from './PdfExportDialog'
 import { PdfProfilesDialog } from './PdfProfilesDialog'
+import { getEffectiveExportProfile, getProfileVisibilitySymbolIds } from './profileVisibility'
 import { isPlacedSymbolVisible } from './symbolVisibility'
 
 interface Props {
@@ -72,16 +73,36 @@ export function Toolbar({ stageRef }: Props) {
   const setPdfExportDialogOpen = useUIStore((s) => s.setPdfExportDialogOpen)
   const pdfProfilesDialogOpen = useUIStore((s) => s.pdfProfilesDialogOpen)
   const setPdfProfilesDialogOpen = useUIStore((s) => s.setPdfProfilesDialogOpen)
+  const setProfileVisibilitySymbolIds = useUIStore((s) => s.setProfileVisibilitySymbolIds)
   const setLoading = useUIStore((s) => s.setLoading)
   const hiddenSymbolIds = useUIStore((s) => s.hiddenSymbolIds)
+  const exportProfiles = useMemo(
+    () => resolvePdfExportOptions(project.exportProfiles),
+    [project.exportProfiles]
+  )
   const [isExportingPDF, setIsExportingPDF] = useState(false)
   const [floorPlanScaleDialogOpen, setFloorPlanScaleDialogOpen] = useState(false)
+  const [visibilityProfileId, setVisibilityProfileId] = useState(
+    CURRENT_VISIBILITY_EXPORT_PROFILE_ID
+  )
 
   const activeFloor = project.floors.find((f) => f.id === activeFloorId)
+  const visibilityProfile = exportProfiles.find((profile) => profile.id === visibilityProfileId)
   const hasContent = !!(activeFloor?.floorPlanImage || (activeFloor?.symbols.length ?? 0) > 0)
   const hasScale = !!activeFloor?.pixelsPerMm
   const hasFloorPlanImage = !!activeFloor?.floorPlanImage
   const floorPlanImageIsGrayscale = !!activeFloor?.floorPlanImage?.grayscale
+
+  useEffect(() => {
+    if (visibilityProfile) return
+    setVisibilityProfileId(CURRENT_VISIBILITY_EXPORT_PROFILE_ID)
+  }, [visibilityProfile])
+
+  useEffect(() => {
+    setProfileVisibilitySymbolIds(
+      getProfileVisibilitySymbolIds(activeFloor, visibilityProfile, hiddenSymbolIds)
+    )
+  }, [activeFloor, hiddenSymbolIds, setProfileVisibilitySymbolIds, visibilityProfile])
 
   const handleZoomToFit = () => {
     if (!stageRef.current || !activeFloor) return
@@ -176,6 +197,7 @@ export function Toolbar({ stageRef }: Props) {
     const projectState = useProjectStore.getState()
     const originalFloorId = projectState.activeFloorId
     const originalHiddenSymbolIds = new Set(useUIStore.getState().hiddenSymbolIds)
+    const originalProfileVisibilitySymbolIds = useUIStore.getState().profileVisibilitySymbolIds
     const originalStage = {
       x: canvasState.stageX,
       y: canvasState.stageY,
@@ -190,6 +212,7 @@ export function Toolbar({ stageRef }: Props) {
     try {
       const snapshots: FloorPdfSnapshot[] = []
       const profiles = resolvePdfExportOptions(projectState.project.exportProfiles)
+      const activeVisibilityProfile = profiles.find((profile) => profile.id === visibilityProfileId)
 
       for (const selection of selections) {
         const floor = project.floors.find((f) => f.id === selection.floorId)
@@ -197,9 +220,10 @@ export function Toolbar({ stageRef }: Props) {
         if (!profile) continue
         if (!floor) continue
 
+        const effectiveProfile = getEffectiveExportProfile(profile, activeVisibilityProfile)
         const visibleSymbolIds = getVisibleSymbolIdsForExportProfile(
           floor.symbols,
-          profile,
+          effectiveProfile,
           originalHiddenSymbolIds
         )
         const bounds = getFloorBounds(floor, originalHiddenSymbolIds, visibleSymbolIds)
@@ -212,7 +236,10 @@ export function Toolbar({ stageRef }: Props) {
 
         setActiveFloor(floor.id)
         setSelectedSymbol(null)
-        useUIStore.setState({ pdfExportVisibleSymbolIds: visibleSymbolIds })
+        useUIStore.setState({
+          profileVisibilitySymbolIds: null,
+          pdfExportVisibleSymbolIds: visibleSymbolIds
+        })
         await waitForStagePaint(stage)
 
         renderStageForPrint(stage, bounds, renderSize)
@@ -231,7 +258,13 @@ export function Toolbar({ stageRef }: Props) {
       }
 
       const legendItems = includeLegend
-        ? buildLegendItemsForExportSelections(project, selections, profiles, originalHiddenSymbolIds)
+        ? buildLegendItemsForExportSelections(
+            project,
+            selections,
+            profiles,
+            originalHiddenSymbolIds,
+            activeVisibilityProfile
+          )
         : []
       if (snapshots.length === 0) return
       const pdfData = exportFloorSnapshotsToPDF(snapshots, project, {
@@ -249,6 +282,7 @@ export function Toolbar({ stageRef }: Props) {
     } finally {
       useUIStore.setState({
         hiddenSymbolIds: originalHiddenSymbolIds,
+        profileVisibilitySymbolIds: originalProfileVisibilitySymbolIds,
         pdfExportVisibleSymbolIds: null
       })
       setActiveFloor(originalFloorId)
@@ -393,6 +427,19 @@ export function Toolbar({ stageRef }: Props) {
         <div className="toolbar-separator" />
 
         <div className="toolbar-group">
+          <label className="toolbar-select-label" title="Kies PDF-profiel voor zichtbaarheid">
+            <span>Zichtbaarheid</span>
+            <select
+              value={visibilityProfileId}
+              onChange={(event) => setVisibilityProfileId(event.target.value)}
+            >
+              {exportProfiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <button onClick={() => setPdfProfilesDialogOpen(true)} title="PDF profielen beheren">
             <span>Profielen</span>
           </button>
@@ -535,7 +582,8 @@ function buildLegendItemsForExportSelections(
   project: Project,
   selections: PdfExportSelection[],
   profiles: ResolvedExportProfile[],
-  baseHiddenSymbolIds: Set<string>
+  baseHiddenSymbolIds: Set<string>,
+  activeVisibilityProfile?: ResolvedExportProfile
 ): PdfLegendItem[] {
   const counts = new Map<string, number>()
 
@@ -543,9 +591,10 @@ function buildLegendItemsForExportSelections(
     const floor = project.floors.find((item) => item.id === selection.floorId)
     const profile = profiles.find((item) => item.id === selection.profileId)
     if (!floor || !profile) return
+    const effectiveProfile = getEffectiveExportProfile(profile, activeVisibilityProfile)
 
     floor.symbols.forEach((symbol) => {
-      if (!isPlacedSymbolVisibleForExportProfile(symbol, profile, baseHiddenSymbolIds)) return
+      if (!isPlacedSymbolVisibleForExportProfile(symbol, effectiveProfile, baseHiddenSymbolIds)) return
       counts.set(symbol.symbolId, (counts.get(symbol.symbolId) ?? 0) + 1)
     })
   })
