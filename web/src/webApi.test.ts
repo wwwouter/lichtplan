@@ -107,15 +107,35 @@ describe('web download helpers', () => {
     expect(document.body.querySelector('input[type="file"]')).toBeNull()
   })
 
-  it('treats cancelling the file input as a cancelled open', async () => {
+  it('keeps the file input alive when focus returns before the file selection change event', async () => {
     const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+    const file = new File(['{"name":"Woning"}'], 'woning.lichtplan', { type: 'application/json' })
     const result = pickFile('.lichtplan')
+    const input = document.body.querySelector<HTMLInputElement>('input[type="file"]')
 
-    expect(document.body.querySelector<HTMLInputElement>('input[type="file"]')).not.toBeNull()
+    expect(input).not.toBeNull()
     expect(click).toHaveBeenCalledTimes(1)
 
     window.dispatchEvent(new Event('focus'))
     vi.runAllTimers()
+
+    expect(document.body.querySelector<HTMLInputElement>('input[type="file"]')).toBe(input)
+
+    chooseFile(input!, file)
+
+    await expect(result).resolves.toBe(file)
+    expect(document.body.querySelector('input[type="file"]')).toBeNull()
+  })
+
+  it('treats cancelling the file input as a cancelled open', async () => {
+    const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {})
+    const result = pickFile('.lichtplan')
+    const input = document.body.querySelector<HTMLInputElement>('input[type="file"]')
+
+    expect(input).not.toBeNull()
+    expect(click).toHaveBeenCalledTimes(1)
+
+    input!.dispatchEvent(new Event('cancel'))
 
     await expect(result).resolves.toBeNull()
     expect(document.body.querySelector('input[type="file"]')).toBeNull()

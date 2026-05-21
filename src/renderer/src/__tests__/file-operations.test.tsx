@@ -9,7 +9,7 @@ describe('file operations', () => {
     vi.mocked(window.api.openProject).mockReset()
     vi.mocked(window.api.saveProject).mockReset()
     useProjectStore.getState().newProject()
-    useUIStore.setState({ notification: null })
+    useUIStore.setState({ notification: null, loading: null })
   })
 
   afterEach(() => {
@@ -37,6 +37,72 @@ describe('file operations', () => {
       type: 'success',
       message: expect.stringContaining('woning.lichtplan')
     })
+  })
+
+  it('does not show loading when opening finishes within 100ms', async () => {
+    vi.useFakeTimers()
+    vi.mocked(window.api.openProject).mockResolvedValue({
+      filePath: '/downloads/woning.lichtplan',
+      data: JSON.stringify({
+        id: 'project-1',
+        name: 'Woning',
+        floors: [],
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z'
+      })
+    })
+    const { result } = renderHook(() => useFileOperations())
+
+    await act(async () => {
+      await result.current.handleOpen()
+    })
+
+    vi.advanceTimersByTime(100)
+
+    expect(useUIStore.getState().loading).toBeNull()
+  })
+
+  it('shows loading when opening takes longer than 100ms', async () => {
+    vi.useFakeTimers()
+    let resolveOpenProject!: (value: Awaited<ReturnType<typeof window.api.openProject>>) => void
+    const openProjectPromise = new Promise<Awaited<ReturnType<typeof window.api.openProject>>>(
+      (resolve) => {
+        resolveOpenProject = resolve
+      }
+    )
+    vi.mocked(window.api.openProject).mockReturnValue(openProjectPromise)
+    const { result } = renderHook(() => useFileOperations())
+    let openPromise!: Promise<void>
+
+    act(() => {
+      openPromise = result.current.handleOpen()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(99)
+    })
+    expect(useUIStore.getState().loading).toBeNull()
+
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+    expect(useUIStore.getState().loading).toBe('Project openen...')
+
+    await act(async () => {
+      resolveOpenProject({
+        filePath: '/downloads/woning.lichtplan',
+        data: JSON.stringify({
+          id: 'project-1',
+          name: 'Woning',
+          floors: [],
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z'
+        })
+      })
+      await openPromise
+    })
+
+    expect(useUIStore.getState().loading).toBeNull()
   })
 
   it('shows a visible error message when opening fails', async () => {

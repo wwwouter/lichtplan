@@ -22,6 +22,7 @@ export function useFileOperations() {
   const handleOpen = useCallback(async () => {
     const ui = useUIStore.getState()
     ui.setNotification(null)
+    const stopLoading = startDelayedLoading('Project openen...')
 
     try {
       const result = await window.api.openProject()
@@ -32,7 +33,6 @@ export function useFileOperations() {
         })
         return
       }
-      ui.setLoading('Project openen...')
       const proj = deserializeProject(result.data)
       setProject(proj, result.filePath)
       useCanvasStore.getState().resetZoom()
@@ -46,7 +46,7 @@ export function useFileOperations() {
         message: `Openen mislukt: ${getErrorMessage(error)}`
       })
     } finally {
-      ui.setLoading(null)
+      stopLoading()
     }
   }, [setProject])
 
@@ -177,4 +177,20 @@ function getErrorMessage(error: unknown): string {
   }
   if (typeof error === 'string') return error
   return 'onbekende fout'
+}
+
+function startDelayedLoading(message: string, delayMs = 100): () => void {
+  const ui = useUIStore.getState()
+  let shown = false
+  const timeoutId = window.setTimeout(() => {
+    shown = true
+    ui.setLoading(message)
+  }, delayMs)
+
+  return () => {
+    window.clearTimeout(timeoutId)
+    if (shown) {
+      ui.setLoading(null)
+    }
+  }
 }

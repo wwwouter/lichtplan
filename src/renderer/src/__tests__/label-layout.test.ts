@@ -123,6 +123,49 @@ describe('smart label layout', () => {
     expect(layout.get('a')).toEqual({ offsetX: 0, offsetY: 0, moved: false })
   })
 
+  it('nudges clustered descriptive labels apart', () => {
+    const layout = computeSmartLabelLayout(
+      [
+        {
+          id: 'a',
+          symbolId: 'aansluitpunt',
+          x: 100,
+          y: 100,
+          width: 16,
+          height: 16,
+          label: 'Laadpaal 2',
+          category: 'Overig'
+        },
+        {
+          id: 'b',
+          symbolId: 'aansluitpunt',
+          x: 112,
+          y: 104,
+          width: 16,
+          height: 16,
+          label: 'Laadpaal 1',
+          category: 'Overig'
+        },
+        {
+          id: 'c',
+          symbolId: 'aansluitpunt',
+          x: 124,
+          y: 108,
+          width: 16,
+          height: 16,
+          label: 'Data',
+          category: 'Overig'
+        }
+      ],
+      false,
+      true
+    )
+
+    expect([layout.get('a'), layout.get('b'), layout.get('c')].some((item) => item?.moved)).toBe(
+      true
+    )
+  })
+
   it('does not move a switch label over its own icon', () => {
     const layout = computeSmartLabelLayout(
       [

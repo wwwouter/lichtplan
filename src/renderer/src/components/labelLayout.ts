@@ -274,7 +274,9 @@ function buildCandidates(label: PreparedLabel): Candidate[] {
 }
 
 function canMoveLabel(label: PreparedLabel): boolean {
-  return label.item.category === 'Schakelaars' || (!label.item.label && !label.item.location)
+  if (label.item.category === 'Schakelaars') return true
+  if (!label.item.label && !label.item.location) return true
+  return label.density >= 2
 }
 
 function getDisplayLines(value: string | undefined): string[] {

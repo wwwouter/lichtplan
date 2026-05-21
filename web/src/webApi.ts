@@ -15,7 +15,7 @@ export function pickFile(accept: string): Promise<File | null> {
     let settled = false
 
     const cleanup = () => {
-      window.removeEventListener('focus', handleFocus)
+      input.removeEventListener('cancel', handleCancel)
       input.remove()
     }
     const finish = (file: File | null) => {
@@ -24,11 +24,7 @@ export function pickFile(accept: string): Promise<File | null> {
       cleanup()
       resolve(file)
     }
-    const handleFocus = () => {
-      window.setTimeout(() => {
-        if (!input.files?.length) finish(null)
-      }, 300)
-    }
+    const handleCancel = () => finish(null)
 
     input.type = 'file'
     input.accept = accept
@@ -36,7 +32,7 @@ export function pickFile(accept: string): Promise<File | null> {
     input.addEventListener('change', () => {
       finish(input.files?.[0] ?? null)
     })
-    window.addEventListener('focus', handleFocus, { once: true })
+    input.addEventListener('cancel', handleCancel)
     document.body.appendChild(input)
     input.click()
   })
