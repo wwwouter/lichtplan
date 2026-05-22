@@ -273,6 +273,7 @@ function addLegendPage(doc: jsPDF, project: Project, legendItems: PdfLegendItem[
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 15
+  const countColumnX = Math.min(pageWidth - margin, margin + 95)
   let y = margin
 
   setTextColor(doc, '#000000')
@@ -312,7 +313,7 @@ function addLegendPage(doc: jsPDF, project: Project, legendItems: PdfLegendItem[
     setTextColor(doc, '#000000')
     doc.setFontSize(10)
     doc.text(item.name, margin + 10, y)
-    doc.text(`${item.count}x`, pageWidth - margin, y, { align: 'right' })
+    doc.text(`${item.count}x`, countColumnX, y, { align: 'right' })
     y += 6
   })
 }

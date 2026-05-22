@@ -28,8 +28,8 @@ import type { Floor, Project } from '../types/project'
 import { FloorPlanScaleDialog } from './FloorPlanScaleDialog'
 import { PdfExportDialog } from './PdfExportDialog'
 import { PdfProfilesDialog } from './PdfProfilesDialog'
+import { getFloorContentBounds } from './floorBounds'
 import { getEffectiveExportProfile, getProfileVisibilitySymbolIds } from './profileVisibility'
-import { isPlacedSymbolVisible } from './symbolVisibility'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -76,6 +76,8 @@ export function Toolbar({ stageRef }: Props) {
   const setProfileVisibilitySymbolIds = useUIStore((s) => s.setProfileVisibilitySymbolIds)
   const setLoading = useUIStore((s) => s.setLoading)
   const hiddenSymbolIds = useUIStore((s) => s.hiddenSymbolIds)
+  const showItemId = useUIStore((s) => s.showItemId)
+  const showLabel = useUIStore((s) => s.showLabel)
   const exportProfiles = useMemo(
     () => resolvePdfExportOptions(project.exportProfiles),
     [project.exportProfiles]
@@ -106,35 +108,9 @@ export function Toolbar({ stageRef }: Props) {
 
   const handleZoomToFit = () => {
     if (!stageRef.current || !activeFloor) return
-    const image = activeFloor.floorPlanImage
-    const symbols = activeFloor.symbols.filter((symbol) =>
-      isPlacedSymbolVisible(symbol, hiddenSymbolIds)
-    )
-    if (!image && symbols.length === 0) return
-
-    const SYMBOL_MARGIN = 30
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity
-
-    if (image) {
-      minX = Math.min(minX, 0)
-      minY = Math.min(minY, 0)
-      maxX = Math.max(maxX, image.width)
-      maxY = Math.max(maxY, image.height)
-    }
-
-    for (const s of symbols) {
-      minX = Math.min(minX, s.x - SYMBOL_MARGIN)
-      minY = Math.min(minY, s.y - SYMBOL_MARGIN)
-      maxX = Math.max(maxX, s.x + SYMBOL_MARGIN)
-      maxY = Math.max(maxY, s.y + SYMBOL_MARGIN)
-    }
-
     const container = stageRef.current.container()
     zoomToFit(
-      { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
+      getFloorBounds(activeFloor, hiddenSymbolIds, null, showItemId, showLabel),
       container.clientWidth,
       container.clientHeight
     )
@@ -171,7 +147,7 @@ export function Toolbar({ stageRef }: Props) {
     if (stage && resizedFloor) {
       const container = stage.container()
       zoomToFit(
-        getFloorBounds(resizedFloor, hiddenSymbolIds),
+        getFloorBounds(resizedFloor, hiddenSymbolIds, null, showItemId, showLabel),
         container.clientWidth,
         container.clientHeight
       )
@@ -226,7 +202,13 @@ export function Toolbar({ stageRef }: Props) {
           effectiveProfile,
           originalHiddenSymbolIds
         )
-        const bounds = getFloorBounds(floor, originalHiddenSymbolIds, visibleSymbolIds)
+        const bounds = getFloorBounds(
+          floor,
+          originalHiddenSymbolIds,
+          visibleSymbolIds,
+          showItemId,
+          showLabel
+        )
         const resolvedOrientation = resolvePdfPageOrientation(
           bounds.width,
           bounds.height,
@@ -483,40 +465,11 @@ export function Toolbar({ stageRef }: Props) {
 function getFloorBounds(
   floor: Floor,
   hiddenSymbolIds: Set<string>,
-  visibleSymbolIds: Set<string> | null = null
+  visibleSymbolIds: Set<string> | null = null,
+  showItemId = true,
+  showLabel = true
 ): { x: number; y: number; width: number; height: number } {
-  const margin = 40
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-
-  if (floor.floorPlanImage) {
-    minX = Math.min(minX, 0)
-    minY = Math.min(minY, 0)
-    maxX = Math.max(maxX, floor.floorPlanImage.width)
-    maxY = Math.max(maxY, floor.floorPlanImage.height)
-  }
-
-  for (const symbol of floor.symbols) {
-    if (!isPlacedSymbolVisible(symbol, hiddenSymbolIds)) continue
-    if (visibleSymbolIds && !visibleSymbolIds.has(symbol.id)) continue
-    minX = Math.min(minX, symbol.x - margin)
-    minY = Math.min(minY, symbol.y - margin)
-    maxX = Math.max(maxX, symbol.x + margin)
-    maxY = Math.max(maxY, symbol.y + margin)
-  }
-
-  if (
-    !Number.isFinite(minX) ||
-    !Number.isFinite(minY) ||
-    !Number.isFinite(maxX) ||
-    !Number.isFinite(maxY)
-  ) {
-    return { x: 0, y: 0, width: 1, height: 1 }
-  }
-
-  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+  return getFloorContentBounds(floor, { hiddenSymbolIds, visibleSymbolIds, showItemId, showLabel })
 }
 
 interface StageGeometry {

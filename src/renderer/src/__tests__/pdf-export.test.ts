@@ -359,6 +359,27 @@ describe('PDF export', () => {
     expect(count?.color).toEqual([0, 0, 0])
   })
 
+  it('keeps the legend count column close to the symbol names on wide pages', () => {
+    const legendItem: PdfLegendItem = {
+      symbolId: 'inbouwspot',
+      name: 'Inbouwspot',
+      category: SymbolCategory.Verlichting,
+      color: '#F59E0B',
+      count: 34,
+      icon: {
+        width: 24,
+        height: 24,
+        shapes: [{ type: 'circle', x: 12, y: 12, radius: 5, fill: '#F59E0B' }]
+      }
+    }
+
+    exportFloorSnapshotsToPDF([], project, { includeLegend: true, legendItems: [legendItem] })
+
+    const count = pdfInstances[0].texts.find((entry) => entry.args[0] === '34x')
+
+    expect(count?.args[1]).toBe(110)
+  })
+
   it('fills arc-based legend icons instead of reducing them to an outline', () => {
     const legendItem: PdfLegendItem = {
       symbolId: 'wandlamp',
