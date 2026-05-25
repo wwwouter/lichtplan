@@ -56,6 +56,7 @@ describe('linked annotation visibility', () => {
 
     expect(optionIds).toContain('lichtpunt-plafond')
     expect(optionIds).toContain('wandlamp')
+    expect(optionIds).not.toContain('cat5e-uutp-contactdoos')
     expect(optionIds).not.toContain('tekst')
     expect(optionIds).not.toContain('lijn')
   })

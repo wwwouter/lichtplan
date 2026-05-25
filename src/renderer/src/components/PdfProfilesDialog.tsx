@@ -1,5 +1,5 @@
 import { useMemo, useState, type KeyboardEvent } from 'react'
-import { ALL_SYMBOLS, SymbolCategory } from '../symbols'
+import { SELECTABLE_SYMBOLS, SymbolCategory } from '../symbols'
 import {
   describeExportProfileRule,
   resolvePdfExportProfiles
@@ -30,7 +30,7 @@ export function PdfProfilesDialog({
 
   const symbolGroups = Object.values(SymbolCategory).map((category) => ({
     category,
-    symbols: ALL_SYMBOLS.filter((symbol) => symbol.category === category)
+    symbols: SELECTABLE_SYMBOLS.filter((symbol) => symbol.category === category)
   }))
   const subjectOptions = useMemo(
     () =>

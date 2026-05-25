@@ -76,6 +76,12 @@ describe('PDF export profiles', () => {
     expect(visible).toEqual(new Set(['lamp-1', 'switch-1', 'line-1']))
   })
 
+  it('uses only Cat6a for the default network profile', () => {
+    const networkProfile = createDefaultExportProfiles().find((profile) => profile.id === 'network')
+
+    expect(networkProfile?.rules[0].values).toEqual(['cat6a-contactdoos'])
+  })
+
   it('resolves only project profiles without fixed built-ins', () => {
     const profiles = resolvePdfExportProfiles([
       {

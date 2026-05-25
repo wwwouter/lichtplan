@@ -1,4 +1,4 @@
-import { ALL_SYMBOLS } from '../symbols'
+import { SELECTABLE_SYMBOLS } from '../symbols'
 import type { SymbolDefinition } from '../symbols'
 import type { PlacedSymbol } from '../types/project'
 import { DIAGRAM_LINE_SYMBOL_ID } from './diagramLine'
@@ -12,7 +12,7 @@ export function isAnnotationSymbolId(symbolId: string): boolean {
 }
 
 export function getForTypeOptions(): SymbolDefinition[] {
-  return ALL_SYMBOLS.filter((symbol) => !isAnnotationSymbolId(symbol.id))
+  return SELECTABLE_SYMBOLS.filter((symbol) => !isAnnotationSymbolId(symbol.id))
 }
 
 export function isPlacedSymbolVisible(

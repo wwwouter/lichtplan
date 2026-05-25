@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ExportProfile, Floor } from '../types/project'
 import {
   CURRENT_VISIBILITY_EXPORT_PROFILE_ID,
   resolvePdfExportOptions,
-  type PdfExportSelection
+  type PdfExportSelection,
+  type ResolvedExportProfile
 } from '../services/pdfExportProfiles'
 import {
   PDF_DPI_OPTIONS,
@@ -28,6 +29,20 @@ interface Props {
   ) => void
 }
 
+export const PDF_EXPORT_PREFERENCES_STORAGE_KEY = 'lichtplan-pdf-export-preferences'
+
+interface PdfExportPreferences {
+  selectedProfileIdsByFloorId: Record<string, string[]>
+  includeLegend: boolean
+  pageOrientation: PdfPageOrientation
+  paperSize: PdfPaperSize
+  dpi: PdfResolutionDpi
+}
+
+const defaultPageOrientation: PdfPageOrientation = 'best-fit'
+const defaultPaperSize: PdfPaperSize = 'a1'
+const defaultDpi: PdfResolutionDpi = 200
+
 export function PdfExportDialog({
   floors,
   activeFloorId,
@@ -37,13 +52,19 @@ export function PdfExportDialog({
   onExport
 }: Props) {
   const profiles = useMemo(() => resolvePdfExportOptions(exportProfiles), [exportProfiles])
+  const initialPreferences = useMemo(
+    () => readPdfExportPreferences(floors, profiles, activeFloorId),
+    [activeFloorId, floors, profiles]
+  )
   const [selectedProfileIdsByFloorId, setSelectedProfileIdsByFloorId] = useState<
     Record<string, string[]>
-  >({ [activeFloorId]: [CURRENT_VISIBILITY_EXPORT_PROFILE_ID] })
-  const [includeLegend, setIncludeLegend] = useState(false)
-  const [pageOrientation, setPageOrientation] = useState<PdfPageOrientation>('best-fit')
-  const [paperSize, setPaperSize] = useState<PdfPaperSize>('a1')
-  const [dpi, setDpi] = useState<PdfResolutionDpi>(200)
+  >(initialPreferences.selectedProfileIdsByFloorId)
+  const [includeLegend, setIncludeLegend] = useState(initialPreferences.includeLegend)
+  const [pageOrientation, setPageOrientation] = useState<PdfPageOrientation>(
+    initialPreferences.pageOrientation
+  )
+  const [paperSize, setPaperSize] = useState<PdfPaperSize>(initialPreferences.paperSize)
+  const [dpi, setDpi] = useState<PdfResolutionDpi>(initialPreferences.dpi)
 
   const selections = floors.flatMap((floor) =>
     (selectedProfileIdsByFloorId[floor.id] ?? []).map((profileId) => ({
@@ -51,6 +72,16 @@ export function PdfExportDialog({
       profileId
     }))
   )
+
+  useEffect(() => {
+    writePdfExportPreferences({
+      selectedProfileIdsByFloorId,
+      includeLegend,
+      pageOrientation,
+      paperSize,
+      dpi
+    })
+  }, [dpi, includeLegend, pageOrientation, paperSize, selectedProfileIdsByFloorId])
 
   const toggleProfile = (floorId: string, profileId: string) => {
     setSelectedProfileIdsByFloorId((current) => {
@@ -221,4 +252,101 @@ export function PdfExportDialog({
       </div>
     </div>
   )
+}
+
+function readPdfExportPreferences(
+  floors: Floor[],
+  profiles: ResolvedExportProfile[],
+  activeFloorId: string
+): PdfExportPreferences {
+  const fallback = getDefaultPdfExportPreferences(activeFloorId)
+  if (typeof window === 'undefined') return fallback
+
+  try {
+    const raw = window.localStorage.getItem(PDF_EXPORT_PREFERENCES_STORAGE_KEY)
+    if (!raw) return fallback
+    const parsed = JSON.parse(raw) as Partial<PdfExportPreferences>
+
+    return {
+      selectedProfileIdsByFloorId: sanitizeSelectedProfiles(
+        parsed.selectedProfileIdsByFloorId,
+        floors,
+        profiles,
+        activeFloorId
+      ),
+      includeLegend:
+        typeof parsed.includeLegend === 'boolean' ? parsed.includeLegend : fallback.includeLegend,
+      pageOrientation: isPdfPageOrientation(parsed.pageOrientation)
+        ? parsed.pageOrientation
+        : fallback.pageOrientation,
+      paperSize: isPdfPaperSize(parsed.paperSize) ? parsed.paperSize : fallback.paperSize,
+      dpi: isPdfResolutionDpi(parsed.dpi) ? parsed.dpi : fallback.dpi
+    }
+  } catch {
+    return fallback
+  }
+}
+
+function writePdfExportPreferences(preferences: PdfExportPreferences): void {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(PDF_EXPORT_PREFERENCES_STORAGE_KEY, JSON.stringify(preferences))
+  } catch {
+    // Ignore storage failures; export settings should still work for the current dialog.
+  }
+}
+
+function getDefaultPdfExportPreferences(activeFloorId: string): PdfExportPreferences {
+  return {
+    selectedProfileIdsByFloorId: { [activeFloorId]: [CURRENT_VISIBILITY_EXPORT_PROFILE_ID] },
+    includeLegend: false,
+    pageOrientation: defaultPageOrientation,
+    paperSize: defaultPaperSize,
+    dpi: defaultDpi
+  }
+}
+
+function sanitizeSelectedProfiles(
+  selectedProfileIdsByFloorId: unknown,
+  floors: Floor[],
+  profiles: ResolvedExportProfile[],
+  activeFloorId: string
+): Record<string, string[]> {
+  const floorIds = new Set(floors.map((floor) => floor.id))
+  const profileIds = new Set(profiles.map((profile) => profile.id))
+  const fallback = getDefaultPdfExportPreferences(activeFloorId).selectedProfileIdsByFloorId
+  if (!selectedProfileIdsByFloorId || typeof selectedProfileIdsByFloorId !== 'object') {
+    return fallback
+  }
+
+  const next: Record<string, string[]> = {}
+  Object.entries(selectedProfileIdsByFloorId as Record<string, unknown>).forEach(
+    ([floorId, value]) => {
+      if (!floorIds.has(floorId) || !Array.isArray(value)) return
+      const validProfileIds = Array.from(
+        new Set(
+          value.filter(
+            (profileId): profileId is string =>
+              typeof profileId === 'string' && profileIds.has(profileId)
+          )
+        )
+      )
+      if (validProfileIds.length > 0) next[floorId] = validProfileIds
+    }
+  )
+
+  return Object.keys(next).length > 0 ? next : fallback
+}
+
+function isPdfPageOrientation(value: unknown): value is PdfPageOrientation {
+  return value === 'best-fit' || value === 'portrait' || value === 'landscape'
+}
+
+function isPdfPaperSize(value: unknown): value is PdfPaperSize {
+  return typeof value === 'string' && value in PDF_PAPER_SIZES
+}
+
+function isPdfResolutionDpi(value: unknown): value is PdfResolutionDpi {
+  return typeof value === 'number' && PDF_DPI_OPTIONS.includes(value as PdfResolutionDpi)
 }

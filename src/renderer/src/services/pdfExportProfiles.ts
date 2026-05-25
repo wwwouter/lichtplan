@@ -63,7 +63,7 @@ export function createDefaultExportProfiles(): ExportProfile[] {
       id: 'network',
       name: 'Netwerk',
       rules: [
-        createRule('symbolId', 'is', ['cat6a-contactdoos', 'cat5e-uutp-contactdoos']),
+        createRule('symbolId', 'is', ['cat6a-contactdoos']),
         createRule('subject', 'is-not', ['beamer'])
       ]
     },

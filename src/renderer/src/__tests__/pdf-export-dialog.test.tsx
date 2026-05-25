@@ -1,6 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
-import { PdfExportDialog } from '../components/PdfExportDialog'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  PDF_EXPORT_PREFERENCES_STORAGE_KEY,
+  PdfExportDialog
+} from '../components/PdfExportDialog'
 import {
   CURRENT_VISIBILITY_EXPORT_PROFILE_ID,
   createDefaultExportProfiles
@@ -25,6 +28,10 @@ const floors: Floor[] = [
 ]
 
 describe('PdfExportDialog', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+  })
+
   it('exports the selected floors, legend preference and default page orientation', () => {
     const onExport = vi.fn()
 
@@ -154,5 +161,78 @@ describe('PdfExportDialog', () => {
       'a1',
       200
     )
+  })
+
+  it('remembers PDF export settings in browser storage', () => {
+    const { unmount } = render(
+      <PdfExportDialog
+        floors={floors}
+        activeFloorId="floor-1"
+        exportProfiles={createDefaultExportProfiles()}
+        isExporting={false}
+        onCancel={vi.fn()}
+        onExport={vi.fn()}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Alles' }))
+    fireEvent.click(screen.getAllByLabelText('Verlichting')[0])
+    fireEvent.click(screen.getByLabelText('Liggend'))
+    fireEvent.change(screen.getByLabelText('Papierformaat'), { target: { value: 'a2' } })
+    fireEvent.change(screen.getByLabelText('Resolutie'), { target: { value: '300' } })
+    fireEvent.click(screen.getByLabelText('Legenda toevoegen'))
+    unmount()
+
+    render(
+      <PdfExportDialog
+        floors={floors}
+        activeFloorId="floor-1"
+        exportProfiles={createDefaultExportProfiles()}
+        isExporting={false}
+        onCancel={vi.fn()}
+        onExport={vi.fn()}
+      />
+    )
+
+    expect(screen.getAllByLabelText('Huidige zichtbaarheid')[0]).toBeChecked()
+    expect(screen.getAllByLabelText('Huidige zichtbaarheid')[1]).toBeChecked()
+    expect(screen.getAllByLabelText('Verlichting')[0]).toBeChecked()
+    expect(screen.getByLabelText('Liggend')).toBeChecked()
+    expect(screen.getByLabelText('Papierformaat')).toHaveValue('a2')
+    expect(screen.getByLabelText('Resolutie')).toHaveValue('300')
+    expect(screen.getByLabelText('Legenda toevoegen')).toBeChecked()
+  })
+
+  it('ignores stale cached floor and profile selections', () => {
+    window.localStorage.setItem(
+      PDF_EXPORT_PREFERENCES_STORAGE_KEY,
+      JSON.stringify({
+        selectedProfileIdsByFloorId: {
+          'deleted-floor': ['deleted-profile']
+        },
+        includeLegend: true,
+        pageOrientation: 'portrait',
+        paperSize: 'a2',
+        dpi: 300
+      })
+    )
+
+    render(
+      <PdfExportDialog
+        floors={floors}
+        activeFloorId="floor-2"
+        exportProfiles={createDefaultExportProfiles()}
+        isExporting={false}
+        onCancel={vi.fn()}
+        onExport={vi.fn()}
+      />
+    )
+
+    expect(screen.getAllByLabelText('Huidige zichtbaarheid')[0]).not.toBeChecked()
+    expect(screen.getAllByLabelText('Huidige zichtbaarheid')[1]).toBeChecked()
+    expect(screen.getByLabelText('Staand')).toBeChecked()
+    expect(screen.getByLabelText('Papierformaat')).toHaveValue('a2')
+    expect(screen.getByLabelText('Resolutie')).toHaveValue('300')
+    expect(screen.getByLabelText('Legenda toevoegen')).toBeChecked()
   })
 })
