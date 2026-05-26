@@ -4,7 +4,11 @@ import {
   createRule,
   resolvePdfExportProfiles
 } from '../services/pdfExportProfiles'
-import { getEffectiveExportProfile, getProfileVisibilitySymbolIds } from '../components/profileVisibility'
+import {
+  getEffectiveExportProfile,
+  getProfileVisibilitySymbolIds,
+  getVisibleSymbolIdsForPdfExport
+} from '../components/profileVisibility'
 import type { Floor, PlacedSymbol } from '../types/project'
 
 function symbol(id: string, symbolId: string, overrides: Partial<PlacedSymbol> = {}): PlacedSymbol {
@@ -83,5 +87,54 @@ describe('profile visibility', () => {
     ])
 
     expect(getEffectiveExportProfile(CURRENT_VISIBILITY_EXPORT_PROFILE, profile)).toBe(profile)
+  })
+
+  it('preserves the active canvas profile visibility when exporting the active floor', () => {
+    const [profile] = resolvePdfExportProfiles([
+      {
+        id: 'beamer-sonos',
+        name: 'beamer/sonos',
+        rules: [createRule('subject', 'is', ['beamer/sonos'])]
+      }
+    ])
+    const activeFloor = floor([
+      symbol('hdmi-1', 'cat6a-contactdoos', { subject: 'beamer/sonos' }),
+      symbol('line-1', 'lijn', { subject: 'beamer/sonos', forSymbolId: 'cat6a-contactdoos' })
+    ])
+
+    expect(
+      getVisibleSymbolIdsForPdfExport({
+        floor: activeFloor,
+        profile,
+        baseHiddenSymbolIds: new Set(),
+        activeVisibilityProfile: profile,
+        activeFloorId: activeFloor.id,
+        activeFloorVisibleSymbolIds: new Set(['hdmi-1', 'line-1'])
+      })
+    ).toEqual(new Set(['hdmi-1', 'line-1']))
+  })
+
+  it('recalculates profile visibility for non-active floors during PDF export', () => {
+    const [profile] = resolvePdfExportProfiles([
+      {
+        id: 'beamer-sonos',
+        name: 'beamer/sonos',
+        rules: [createRule('subject', 'is', ['beamer/sonos'])]
+      }
+    ])
+
+    expect(
+      getVisibleSymbolIdsForPdfExport({
+        floor: floor([
+          symbol('hdmi-1', 'cat6a-contactdoos', { subject: 'beamer/sonos' }),
+          symbol('line-1', 'lijn', { subject: 'beamer/sonos', forSymbolId: 'cat6a-contactdoos' })
+        ]),
+        profile,
+        baseHiddenSymbolIds: new Set(),
+        activeVisibilityProfile: profile,
+        activeFloorId: 'other-floor',
+        activeFloorVisibleSymbolIds: new Set(['hdmi-1', 'line-1'])
+      })
+    ).toEqual(new Set(['hdmi-1', 'line-1']))
   })
 })

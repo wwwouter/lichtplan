@@ -28,3 +28,36 @@ export function getEffectiveExportProfile(
 
   return exportProfile
 }
+
+export function getVisibleSymbolIdsForPdfExport({
+  floor,
+  profile,
+  baseHiddenSymbolIds,
+  activeVisibilityProfile,
+  activeFloorId,
+  activeFloorVisibleSymbolIds
+}: {
+  floor: Floor
+  profile: ResolvedExportProfile
+  baseHiddenSymbolIds: Set<string>
+  activeVisibilityProfile?: ResolvedExportProfile
+  activeFloorId: string
+  activeFloorVisibleSymbolIds: Set<string> | null
+}): Set<string> | null {
+  const effectiveProfile = getEffectiveExportProfile(profile, activeVisibilityProfile)
+
+  if (
+    floor.id === activeFloorId &&
+    activeVisibilityProfile &&
+    activeVisibilityProfile.id !== CURRENT_VISIBILITY_EXPORT_PROFILE_ID &&
+    effectiveProfile.id === activeVisibilityProfile.id &&
+    activeFloorVisibleSymbolIds
+  ) {
+    const floorSymbolIds = new Set(floor.symbols.map((symbol) => symbol.id))
+    return new Set(
+      Array.from(activeFloorVisibleSymbolIds).filter((symbolId) => floorSymbolIds.has(symbolId))
+    )
+  }
+
+  return getVisibleSymbolIdsForExportProfile(floor.symbols, effectiveProfile, baseHiddenSymbolIds)
+}

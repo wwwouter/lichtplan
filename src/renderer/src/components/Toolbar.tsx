@@ -15,7 +15,6 @@ import {
 } from '../services/exportService'
 import {
   CURRENT_VISIBILITY_EXPORT_PROFILE_ID,
-  getVisibleSymbolIdsForExportProfile,
   isPlacedSymbolVisibleForExportProfile,
   resolvePdfExportOptions,
   type PdfExportSelection,
@@ -29,7 +28,10 @@ import { FloorPlanScaleDialog } from './FloorPlanScaleDialog'
 import { PdfExportDialog } from './PdfExportDialog'
 import { PdfProfilesDialog } from './PdfProfilesDialog'
 import { getFloorContentBounds } from './floorBounds'
-import { getEffectiveExportProfile, getProfileVisibilitySymbolIds } from './profileVisibility'
+import {
+  getProfileVisibilitySymbolIds,
+  getVisibleSymbolIdsForPdfExport
+} from './profileVisibility'
 
 interface Props {
   stageRef: React.RefObject<Konva.Stage | null>
@@ -196,12 +198,14 @@ export function Toolbar({ stageRef }: Props) {
         if (!profile) continue
         if (!floor) continue
 
-        const effectiveProfile = getEffectiveExportProfile(profile, activeVisibilityProfile)
-        const visibleSymbolIds = getVisibleSymbolIdsForExportProfile(
-          floor.symbols,
-          effectiveProfile,
-          originalHiddenSymbolIds
-        )
+        const visibleSymbolIds = getVisibleSymbolIdsForPdfExport({
+          floor,
+          profile,
+          baseHiddenSymbolIds: originalHiddenSymbolIds,
+          activeVisibilityProfile,
+          activeFloorId: originalFloorId,
+          activeFloorVisibleSymbolIds: originalProfileVisibilitySymbolIds
+        })
         const bounds = getFloorBounds(
           floor,
           originalHiddenSymbolIds,
@@ -245,7 +249,9 @@ export function Toolbar({ stageRef }: Props) {
             selections,
             profiles,
             originalHiddenSymbolIds,
-            activeVisibilityProfile
+            activeVisibilityProfile,
+            originalFloorId,
+            originalProfileVisibilitySymbolIds
           )
         : []
       if (snapshots.length === 0) return
@@ -536,7 +542,9 @@ function buildLegendItemsForExportSelections(
   selections: PdfExportSelection[],
   profiles: ResolvedExportProfile[],
   baseHiddenSymbolIds: Set<string>,
-  activeVisibilityProfile?: ResolvedExportProfile
+  activeVisibilityProfile: ResolvedExportProfile | undefined,
+  activeFloorId: string,
+  activeFloorVisibleSymbolIds: Set<string> | null
 ): PdfLegendItem[] {
   const counts = new Map<string, number>()
 
@@ -544,10 +552,23 @@ function buildLegendItemsForExportSelections(
     const floor = project.floors.find((item) => item.id === selection.floorId)
     const profile = profiles.find((item) => item.id === selection.profileId)
     if (!floor || !profile) return
-    const effectiveProfile = getEffectiveExportProfile(profile, activeVisibilityProfile)
+    const visibleSymbolIds = getVisibleSymbolIdsForPdfExport({
+      floor,
+      profile,
+      baseHiddenSymbolIds,
+      activeVisibilityProfile,
+      activeFloorId,
+      activeFloorVisibleSymbolIds
+    })
 
     floor.symbols.forEach((symbol) => {
-      if (!isPlacedSymbolVisibleForExportProfile(symbol, effectiveProfile, baseHiddenSymbolIds)) return
+      if (visibleSymbolIds && !visibleSymbolIds.has(symbol.id)) return
+      if (
+        !visibleSymbolIds &&
+        !isPlacedSymbolVisibleForExportProfile(symbol, profile, baseHiddenSymbolIds)
+      ) {
+        return
+      }
       counts.set(symbol.symbolId, (counts.get(symbol.symbolId) ?? 0) + 1)
     })
   })

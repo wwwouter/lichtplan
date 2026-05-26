@@ -1,7 +1,7 @@
 import { ALL_SYMBOLS } from '../symbols'
 import { lightingSymbols } from '../symbols/lighting'
 import { switchSymbols } from '../symbols/switches'
-import { isPlacedSymbolVisible } from '../components/symbolVisibility'
+import { isAnnotationSymbolId, isPlacedSymbolVisible } from '../components/symbolVisibility'
 import type { ExportProfile, ExportProfileRule, PlacedSymbol } from '../types/project'
 
 export const CURRENT_VISIBILITY_EXPORT_PROFILE_ID = 'current-visibility'
@@ -123,6 +123,9 @@ export function isPlacedSymbolVisibleForExportProfile(
   if (!isPlacedSymbolVisible(symbol, baseHiddenSymbolIds)) return false
   if (profile.rules === null) return true
   if (profile.rules.length === 0) return false
+  if (isAnnotationSymbolId(symbol.symbolId)) {
+    return isAnnotationVisibleForExportProfile(symbol, profile)
+  }
   return profile.rules.every((rule) => doesSymbolMatchRule(symbol, rule))
 }
 
@@ -149,6 +152,32 @@ function doesSymbolMatchRule(symbol: PlacedSymbol, rule: ExportProfileRule): boo
   }
 
   return !matches
+}
+
+function isAnnotationVisibleForExportProfile(
+  symbol: PlacedSymbol,
+  profile: ResolvedExportProfile
+): boolean {
+  return (
+    profile.rules?.every((rule) => doesSymbolMatchRule(symbol, rule)) === true &&
+    profile.rules.some((rule) => doesAnnotationHavePositiveProfileMatch(symbol, rule))
+  )
+}
+
+function doesAnnotationHavePositiveProfileMatch(
+  symbol: PlacedSymbol,
+  rule: ExportProfileRule
+): boolean {
+  if (rule.operator !== 'is') return false
+
+  const values = normalizeValues(rule.values)
+  if (rule.field === 'symbolId') {
+    const linkedSymbolId = normalizeValue(symbol.forSymbolId)
+    return linkedSymbolId.length > 0 && values.includes(linkedSymbolId)
+  }
+
+  const subject = normalizeValue(symbol.subject)
+  return subject.length > 0 && values.includes(subject)
 }
 
 function matchesSymbolTypeRule(symbol: PlacedSymbol, values: string[]): boolean {

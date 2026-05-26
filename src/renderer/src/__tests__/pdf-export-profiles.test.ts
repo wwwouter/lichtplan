@@ -66,14 +66,62 @@ describe('PDF export profiles', () => {
         symbol('lamp-1', 'inbouwspot'),
         symbol('switch-1', 'dimmer'),
         symbol('line-1', 'lijn', { forSymbolId: 'dimmer' }),
+        symbol('text-1', 'tekst', { forSymbolId: 'inbouwspot' }),
         symbol('beamer-lamp', 'inbouwspot', { subject: 'beamer' }),
+        symbol('beamer-line', 'lijn', { forSymbolId: 'dimmer', subject: 'beamer' }),
+        symbol('unlinked-line', 'lijn'),
+        symbol('unlinked-text', 'tekst'),
         symbol('wcd-1', 'geaard-stopcontact')
       ],
       profile,
       new Set()
     )
 
-    expect(visible).toEqual(new Set(['lamp-1', 'switch-1', 'line-1']))
+    expect(visible).toEqual(new Set(['lamp-1', 'switch-1', 'line-1', 'text-1']))
+  })
+
+  it('shows annotations in subject profiles when their subject matches', () => {
+    const profile = resolvePdfExportProfiles([
+      {
+        id: 'beamer-sonos',
+        name: 'beamer/sonos',
+        rules: [createRule('subject', 'is', ['beamer/sonos'])]
+      }
+    ])[0]
+    const visible = getVisibleSymbolIdsForExportProfile(
+      [
+        symbol('line-1', 'lijn', { subject: 'beamer/sonos' }),
+        symbol('text-1', 'tekst', { subject: 'beamer/sonos' }),
+        symbol('line-2', 'lijn', { forSymbolId: 'cat6a-contactdoos' })
+      ],
+      profile,
+      new Set()
+    )
+
+    expect(visible).toEqual(new Set(['line-1', 'text-1']))
+  })
+
+  it('does not show text and lines just because their own type is selected', () => {
+    const profile = resolvePdfExportProfiles([
+      {
+        id: 'lighting-with-annotations',
+        name: 'Verlichting',
+        rules: [createRule('symbolId', 'is', ['inbouwspot', 'lijn', 'tekst'])]
+      }
+    ])[0]
+    const visible = getVisibleSymbolIdsForExportProfile(
+      [
+        symbol('lamp-1', 'inbouwspot'),
+        symbol('line-linked', 'lijn', { forSymbolId: 'inbouwspot' }),
+        symbol('text-linked', 'tekst', { forSymbolId: 'inbouwspot' }),
+        symbol('line-unlinked', 'lijn'),
+        symbol('text-unlinked', 'tekst')
+      ],
+      profile,
+      new Set()
+    )
+
+    expect(visible).toEqual(new Set(['lamp-1', 'line-linked', 'text-linked']))
   })
 
   it('uses only Cat6a for the default network profile', () => {
