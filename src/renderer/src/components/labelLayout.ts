@@ -7,6 +7,7 @@ const BASE_PAD_X = 2
 const BASE_PAD_Y = 1
 const BASE_LABEL_GAP = 4
 const BASE_SYMBOL_PAD = 3
+const BASE_LEADER_CLEARANCE = 8
 const BASE_MAX_LABEL_MOVE = 42
 
 interface LabelSize {
@@ -245,7 +246,7 @@ function buildCandidates(label: PreparedLabel): Candidate[] {
 
   for (const yOffset of yOffsets) {
     for (const xOffset of xOffsets) {
-      addCandidate(candidates, {
+      addCandidateWithLeaderClearance(label, candidates, {
         centerX: defaultCenterX + xOffset,
         top: defaultTop + yOffset
       })
@@ -255,11 +256,11 @@ function buildCandidates(label: PreparedLabel): Candidate[] {
   const sideGap = 8 * metrics.scale
   const verticalOffsets = [0, -yStep, yStep, -yStep * 2, yStep * 2]
   for (const verticalOffset of verticalOffsets) {
-    addCandidate(candidates, {
+    addCandidateWithLeaderClearance(label, candidates, {
       centerX: item.x + item.width / 2 + sideGap + size.width / 2,
       top: item.y - size.height / 2 + verticalOffset
     })
-    addCandidate(candidates, {
+    addCandidateWithLeaderClearance(label, candidates, {
       centerX: item.x - item.width / 2 - sideGap - size.width / 2,
       top: item.y - size.height / 2 + verticalOffset
     })
@@ -297,7 +298,54 @@ function getLabelMetrics(scale = 1) {
     padY: BASE_PAD_Y * normalizedScale,
     avgCharWidth: fontSize * 0.62,
     labelGap: BASE_LABEL_GAP * normalizedScale,
-    symbolPad: BASE_SYMBOL_PAD * normalizedScale
+    symbolPad: BASE_SYMBOL_PAD * normalizedScale,
+    leaderClearance: BASE_LEADER_CLEARANCE * normalizedScale
+  }
+}
+
+function addCandidateWithLeaderClearance(
+  label: PreparedLabel,
+  candidates: Candidate[],
+  candidate: Candidate
+): void {
+  addCandidate(candidates, addMovedLabelLeaderClearance(label, candidate))
+}
+
+function addMovedLabelLeaderClearance(label: PreparedLabel, candidate: Candidate): Candidate {
+  const dx = candidate.centerX - label.defaultCenterX
+  const dy = candidate.top - label.defaultTop
+  if (Math.abs(dx) <= 2 && Math.abs(dy) <= 2) return candidate
+
+  const metrics = getLabelMetrics(label.item.detailScale)
+  const labelBox = candidateBox(candidate, label.size)
+  const iconBox = expandBox(
+    {
+      left: label.item.x - label.item.width / 2,
+      top: label.item.y - label.item.height / 2,
+      right: label.item.x + label.item.width / 2,
+      bottom: label.item.y + label.item.height / 2
+    },
+    metrics.leaderClearance
+  )
+
+  if (overlapArea(labelBox, iconBox) === 0) return candidate
+
+  const labelCenterY = candidate.top + label.size.height / 2
+  const centerDx = candidate.centerX - label.item.x
+  const centerDy = labelCenterY - label.item.y
+  const horizontallyAligned = labelBox.left < iconBox.right && labelBox.right > iconBox.left
+
+  if (horizontallyAligned && Math.abs(centerDy) > 0.5) {
+    return {
+      centerX: candidate.centerX,
+      top: centerDy > 0 ? iconBox.bottom : iconBox.top - label.size.height
+    }
+  }
+
+  return {
+    centerX:
+      centerDx >= 0 ? iconBox.right + label.size.width / 2 : iconBox.left - label.size.width / 2,
+    top: candidate.top
   }
 }
 

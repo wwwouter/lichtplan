@@ -166,6 +166,53 @@ describe('smart label layout', () => {
     )
   })
 
+  it('keeps moved descriptive labels far enough from their icon for a leader line', () => {
+    const layout = computeSmartLabelLayout(
+      [
+        {
+          id: 'a',
+          symbolId: 'cat6a-contactdoos',
+          x: 100,
+          y: 100,
+          width: 12,
+          height: 12,
+          label: '2 poorten naar kelder',
+          category: 'Elektra',
+          detailScale: 0.5
+        },
+        {
+          id: 'b',
+          symbolId: 'cat6a-contactdoos',
+          x: 106,
+          y: 100,
+          width: 12,
+          height: 12,
+          label: 'Naar beamer',
+          category: 'Elektra',
+          detailScale: 0.5
+        },
+        {
+          id: 'c',
+          symbolId: 'aansluitpunt',
+          x: 112,
+          y: 100,
+          width: 8,
+          height: 8,
+          label: 'HDMI naar beamer',
+          category: 'Overig',
+          detailScale: 0.5
+        }
+      ],
+      false,
+      true
+    )
+
+    const movedLayouts = ['a', 'b', 'c'].map((id) => layout.get(id)).filter((item) => item?.moved)
+
+    expect(movedLayouts.length).toBeGreaterThan(0)
+    expect(movedLayouts.some((item) => Math.abs(item?.offsetY ?? 0) >= 4)).toBe(true)
+  })
+
   it('does not move a switch label over its own icon', () => {
     const layout = computeSmartLabelLayout(
       [

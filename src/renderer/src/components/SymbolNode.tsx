@@ -24,6 +24,7 @@ import {
   type DiagramLinePoint
 } from './diagramLine'
 import { TEXT_SYMBOL_ID } from './symbolVisibility'
+import { getLabelLeaderLineStyle, getLabelLeaderSegment } from './symbolLabelLeader'
 
 interface Props {
   symbol: PlacedSymbol
@@ -156,12 +157,12 @@ export function SymbolNode({
               y={iconBounds.offsetY + 4 * detailScale}
               minWidth={iconBounds.width}
               offset={labelLayout}
-              leaderFrom={getLeaderStart(
-                labelLayout,
-                iconBounds.offsetX,
-                iconBounds.offsetY,
-                detailScale
-              )}
+              iconBox={{
+                left: -iconBounds.offsetX,
+                top: -iconBounds.offsetY,
+                width: iconBounds.width,
+                height: iconBounds.height
+              }}
               scale={detailScale}
             />
           )}
@@ -431,14 +432,14 @@ function SymbolLabel({
   y,
   minWidth,
   offset,
-  leaderFrom,
+  iconBox,
   scale
 }: {
   text: string
   y: number
   minWidth: number
   offset?: { offsetX: number; offsetY: number; moved: boolean }
-  leaderFrom?: { x: number; y: number }
+  iconBox: { left: number; top: number; width: number; height: number }
   scale: number
 }) {
   const fontSize = 11 * scale
@@ -468,31 +469,57 @@ function SymbolLabel({
   const labelY = y + offsetY
   const boxLeft = offsetX - boxWidth / 2
   const boxTop = labelY - padY
-  const labelCenterY = boxTop + boxHeight / 2
-  const leaderTarget = getLeaderTarget(
-    leaderFrom,
-    { x: offsetX, y: labelCenterY },
-    boxLeft,
-    boxTop,
-    boxWidth,
-    boxHeight
-  )
+  const leaderSegment = getLabelLeaderSegment({
+    iconBox,
+    labelBox: {
+      left: boxLeft,
+      top: boxTop,
+      width: boxWidth,
+      height: boxHeight
+    }
+  })
   const leaderLength =
-    leaderFrom && leaderTarget
-      ? Math.sqrt((leaderTarget.x - leaderFrom.x) ** 2 + (leaderTarget.y - leaderFrom.y) ** 2)
+    leaderSegment
+      ? Math.sqrt(
+          (leaderSegment.to.x - leaderSegment.from.x) ** 2 +
+            (leaderSegment.to.y - leaderSegment.from.y) ** 2
+        )
       : 0
-  const showLeader = offset?.moved && leaderFrom && leaderTarget && leaderLength <= 36 * scale
+  const showLeader = offset?.moved && leaderSegment && leaderLength > 1 * scale
+  const leaderLineStyle = getLabelLeaderLineStyle(scale)
 
   return (
     <>
       {showLeader && (
-        <Line
-          points={[leaderFrom.x, leaderFrom.y, leaderTarget.x, leaderTarget.y]}
-          stroke="#111827"
-          strokeWidth={1 * scale}
-          opacity={0.38}
-          listening={false}
-        />
+        <>
+          <Line
+            points={[
+              leaderSegment.from.x,
+              leaderSegment.from.y,
+              leaderSegment.to.x,
+              leaderSegment.to.y
+            ]}
+            stroke={leaderLineStyle.haloStroke}
+            strokeWidth={leaderLineStyle.haloStrokeWidth}
+            lineCap="round"
+            lineJoin="round"
+            listening={false}
+          />
+          <Line
+            points={[
+              leaderSegment.from.x,
+              leaderSegment.from.y,
+              leaderSegment.to.x,
+              leaderSegment.to.y
+            ]}
+            stroke={leaderLineStyle.stroke}
+            strokeWidth={leaderLineStyle.strokeWidth}
+            opacity={leaderLineStyle.opacity}
+            lineCap="round"
+            lineJoin="round"
+            listening={false}
+          />
+        </>
       )}
       {lines.length > 0 && (
         <Rect
@@ -521,58 +548,6 @@ function SymbolLabel({
       />
     </>
   )
-}
-
-function getLeaderStart(
-  offset: { offsetX: number; offsetY: number; moved: boolean } | undefined,
-  offsetX: number,
-  offsetY: number,
-  scale: number
-): { x: number; y: number } | undefined {
-  if (!offset?.moved) return undefined
-  const absX = Math.abs(offset.offsetX)
-  const absY = Math.abs(offset.offsetY)
-  const gap = 2 * scale
-
-  if (absX > absY) {
-    return {
-      x: offset.offsetX > 0 ? offsetX + gap : -offsetX - gap,
-      y: 0
-    }
-  }
-
-  return {
-    x: 0,
-    y: offset.offsetY < 0 ? -offsetY - gap : offsetY + gap
-  }
-}
-
-function getLeaderTarget(
-  leaderFrom: { x: number; y: number } | undefined,
-  labelCenter: { x: number; y: number },
-  boxLeft: number,
-  boxTop: number,
-  boxWidth: number,
-  boxHeight: number
-): { x: number; y: number } | undefined {
-  if (!leaderFrom) return undefined
-
-  const dx = labelCenter.x - leaderFrom.x
-  const dy = labelCenter.y - leaderFrom.y
-  const halfWidth = boxWidth / 2
-  const halfHeight = boxHeight / 2
-
-  if (Math.abs(dx / halfWidth) > Math.abs(dy / halfHeight)) {
-    return {
-      x: dx > 0 ? boxLeft : boxLeft + boxWidth,
-      y: Math.min(boxTop + boxHeight, Math.max(boxTop, leaderFrom.y))
-    }
-  }
-
-  return {
-    x: Math.min(boxLeft + boxWidth, Math.max(boxLeft, leaderFrom.x)),
-    y: dy > 0 ? boxTop : boxTop + boxHeight
-  }
 }
 
 function GroupBadge({
